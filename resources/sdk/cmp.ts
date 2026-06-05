@@ -419,7 +419,12 @@ function renderReopenWidget(): void {
     btn.type = 'button';
     btn.setAttribute('aria-label', t('manage'));
     btn.title = t('manage');
-    btn.textContent = '🍪';
+    // Simple monochrome cookie glyph; inherits button color via currentColor.
+    btn.innerHTML =
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+        ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5Z"/>' +
+        '<path d="M8.5 8.5h.01"/><path d="M16 11h.01"/><path d="M11 15h.01"/></svg>';
     btn.style.cssText = [
         'position:fixed',
         'bottom:16px',
@@ -429,9 +434,9 @@ function renderReopenWidget(): void {
         'border-radius:50%',
         'border:0',
         'cursor:pointer',
-        'font-size:20px',
-        'line-height:44px',
-        'text-align:center',
+        'display:flex',
+        'align-items:center',
+        'justify-content:center',
         'padding:0',
         'z-index:2147483646',
         'box-shadow:0 4px 16px rgba(0,0,0,.25)',
