@@ -14,6 +14,19 @@ class BannerService
     /** Required content keys per language (BAN-2 enforces rejectAll exists). */
     public const REQUIRED_CONTENT_KEYS = ['title', 'body', 'acceptAll', 'rejectAll', 'customize'];
 
+    /** Default text for the details modal's "About cookies" tab (English). */
+    public const DEFAULT_ABOUT_COOKIES = <<<'TXT'
+Cookies are small text files that can be used by websites to make a user's experience more efficient.
+
+Under the law, we can store cookies on your device if they are strictly necessary for the operation of this site. For all other types of cookies we need your permission.
+This site uses different types of cookies. Some cookies are placed by third-party services that appear on our pages.
+You can at any time change or withdraw your consent from the cookie declaration on our website.
+
+Learn more about who we are, how you can contact us and how we process personal data in our Privacy Policy.
+
+Please state your consent ID and date when you contact us regarding your consent.
+TXT;
+
     public const DEFAULT_CONSENT_MODE_MAP = [
         'analytics_storage' => ['statistics'],
         'ad_storage' => ['marketing'],
@@ -46,7 +59,10 @@ class BannerService
                 'version' => $this->nextVersion($domain),
                 'status' => BannerStatus::Draft,
                 'layout' => $published->layout,
-                'content' => $published->content,
+                'content' => $this->backfillAboutCookies(
+                    is_array($published->content) ? $published->content : [],
+                    $published->default_language ?? 'en',
+                ),
                 'languages' => $published->languages,
                 'default_language' => $published->default_language,
                 'policy_url' => $published->policy_url,
@@ -77,6 +93,25 @@ class BannerService
 
         // Invalidate the public config cache so the SDK picks up changes fast.
         Cache::forget(ConfigController::cacheKey($draft->domain->domain_uid));
+    }
+
+    /**
+     * Seed the default English "About cookies" text when the cloned content
+     * has no value for the default language. Other languages keep whatever
+     * the owner has provided (or remain empty for them to translate).
+     *
+     * @param  array<string, array<string, string>>  $content
+     * @return array<string, array<string, string>>
+     */
+    private function backfillAboutCookies(array $content, string $defaultLang): array
+    {
+        $langContent = $content[$defaultLang] ?? [];
+        if (blank($langContent['aboutCookies'] ?? null)) {
+            $langContent['aboutCookies'] = self::DEFAULT_ABOUT_COOKIES;
+            $content[$defaultLang] = $langContent;
+        }
+
+        return $content;
     }
 
     public function nextVersion(Domain $domain): int
@@ -131,6 +166,9 @@ class BannerService
                     'acceptAll' => 'Accept all',
                     'rejectAll' => 'Reject all',
                     'customize' => 'Customize',
+                    'details' => 'Cookie details',
+                    'close' => 'Close',
+                    'aboutCookies' => self::DEFAULT_ABOUT_COOKIES,
                 ],
             ],
             'languages' => ['en'],

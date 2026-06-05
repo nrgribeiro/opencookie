@@ -34,6 +34,12 @@ class ImpressionController extends Controller
 
         $row->increment('count');
 
+        // US-DOM-4 — an impression beacon means the SDK is loading on the live
+        // site, so the banner is live. Flip once; cheap no-op thereafter.
+        if (! $domain->banner_live) {
+            $domain->update(['banner_live' => true]);
+        }
+
         return response()->noContent();
     }
 }

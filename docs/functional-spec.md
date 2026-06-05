@@ -116,7 +116,7 @@ GDPR/ePrivacy demands the platform must satisfy:
 - Lightweight JS loaded first on the page.
 - Renders banner if no valid consent record present.
 - **Blocks non-necessary scripts** until consent. Developer tags scripts
-  (`type="text/plain" data-category="marketing"`) which the SDK activates only on
+  (`type="text/plain" data-cmp-category="marketing"`) which the SDK activates only on
   consent. Plus auto-blocking of known third-party tags where feasible.
 - **Google Consent Mode v2:** SDK pushes default + updated consent signals
   (`ad_storage`, `analytics_storage`, `ad_user_data`, `ad_personalization`) to
