@@ -3,16 +3,20 @@
 namespace App\Services\Scanner;
 
 use App\Enums\CookieCategory;
+use App\Models\CookieClassification;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Throwable;
 
 /**
- * In-house cookie classification (functional-spec §8 — built, seeded from the
- * Open Cookie Database). MVP uses a small static map by cookie name and by
- * known third-party host; unknown entries fall through to Unclassified.
+ * In-house cookie classification (functional-spec §8). Primary source is the
+ * cookie_classifications table, populated from the Open Cookie Database via
+ * `cookies:import-ocd`. When that table is empty or unavailable it falls back
+ * to a built-in static map so scans still classify common cookies offline.
  */
 class CookieClassifier
 {
-    /** Exact cookie-name → category. */
+    /** Exact / prefix cookie-name → category (fallback when the DB is empty). */
     private const NAME_MAP = [
         '_ga' => CookieCategory::Statistics,
         '_gid' => CookieCategory::Statistics,
@@ -29,7 +33,7 @@ class CookieClassifier
         'PHPSESSID' => CookieCategory::Necessary,
     ];
 
-    /** Host substring → category. */
+    /** Host substring → category (fallback). */
     private const HOST_MAP = [
         'google-analytics.com' => CookieCategory::Statistics,
         'googletagmanager.com' => CookieCategory::Statistics,
@@ -39,11 +43,73 @@ class CookieClassifier
         'ads.linkedin.com' => CookieCategory::Marketing,
     ];
 
+    /** Exact-name index: lower(name) → list of classifications. */
+    private ?array $exact = null;
+
+    /** Wildcard (prefix) classifications. @var array<int, CookieClassification>|null */
+    private ?array $wildcards = null;
+
     public function classify(string $name, ?string $sourceDomain = null): CookieCategory
     {
-        // Prefix match handles _ga_* style variants.
+        return $this->lookup($name, $sourceDomain)?->category
+            ?? $this->fallbackCategory($name, $sourceDomain);
+    }
+
+    /**
+     * Full classification record (category + provider + purpose) for the given
+     * cookie, from the DB only. Returns null when there is no DB match.
+     */
+    public function lookup(string $name, ?string $sourceDomain = null): ?CookieClassification
+    {
+        $this->load();
+
+        $candidates = $this->exact[Str::lower($name)] ?? [];
+        $match = $this->pickByDomain($candidates, $sourceDomain);
+        if ($match) {
+            return $match;
+        }
+
+        foreach ($this->wildcards ?? [] as $entry) {
+            if ($entry->name !== '' && Str::startsWith($name, $entry->name)
+                && $this->domainMatches($entry, $sourceDomain)) {
+                return $entry;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<int, CookieClassification>  $candidates
+     */
+    private function pickByDomain(array $candidates, ?string $sourceDomain): ?CookieClassification
+    {
+        $domainless = null;
+        foreach ($candidates as $entry) {
+            if ($entry->domain && $sourceDomain && Str::contains($sourceDomain, $entry->domain)) {
+                return $entry; // domain-specific match wins
+            }
+            if (! $entry->domain) {
+                $domainless = $domainless ?? $entry;
+            }
+        }
+
+        return $domainless;
+    }
+
+    private function domainMatches(CookieClassification $entry, ?string $sourceDomain): bool
+    {
+        if (! $entry->domain) {
+            return true;
+        }
+
+        return $sourceDomain !== null && Str::contains($sourceDomain, $entry->domain);
+    }
+
+    private function fallbackCategory(string $name, ?string $sourceDomain): CookieCategory
+    {
         foreach (self::NAME_MAP as $known => $category) {
-            if ($name === $known || Str::startsWith($name, $known.'_') || Str::startsWith($name, $known)) {
+            if ($name === $known || Str::startsWith($name, $known)) {
                 return $category;
             }
         }
@@ -57,5 +123,32 @@ class CookieClassifier
         }
 
         return CookieCategory::Unclassified;
+    }
+
+    /** Lazily load + index the classification table (once per instance). */
+    private function load(): void
+    {
+        if ($this->exact !== null) {
+            return;
+        }
+
+        $this->exact = [];
+        $this->wildcards = [];
+
+        try {
+            /** @var Collection<int, CookieClassification> $rows */
+            $rows = CookieClassification::query()->get();
+        } catch (Throwable) {
+            return; // table missing → fallback only
+        }
+
+        foreach ($rows as $row) {
+            if ($row->is_wildcard) {
+                $this->wildcards[] = $row;
+
+                continue;
+            }
+            $this->exact[Str::lower($row->name)][] = $row;
+        }
     }
 }
