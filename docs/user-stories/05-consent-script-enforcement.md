@@ -11,7 +11,7 @@ Module ref: spec §4.5
 **So that** my site complies with prior-consent rules.
 
 ### Acceptance Criteria
-- **Given** a page with the SDK, **when** it loads and no valid consent exists, **then** scripts tagged `type="text/plain" data-category="..."` for non-necessary categories do NOT execute.
+- **Given** a page with the SDK, **when** it loads and no valid consent exists, **then** scripts tagged `type="text/plain" data-cmp-category="..."` for non-necessary categories do NOT execute.
 - **Given** known third-party tags, **where** feasible, **then** the SDK auto-blocks them without manual tagging.
 - **Given** Necessary-only scripts, **then** they run regardless of consent state.
 

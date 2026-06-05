@@ -34,6 +34,8 @@ interface BannerConfig {
     publishedAt: string | null;
 }
 
+const MULTILINE_KEYS = new Set(['body', 'aboutCookies']);
+
 const CONTENT_FIELDS: { key: string; label: string }[] = [
     { key: 'title', label: 'Title' },
     { key: 'body', label: 'Body' },
@@ -42,6 +44,7 @@ const CONTENT_FIELDS: { key: string; label: string }[] = [
     { key: 'customize', label: 'Customize button' },
     { key: 'details', label: 'Cookie details link (optional)' },
     { key: 'close', label: 'Close button (optional)' },
+    { key: 'aboutCookies', label: 'About cookies (modal tab body)' },
 ];
 
 export default function BannerBuilder({
@@ -202,10 +205,10 @@ export default function BannerBuilder({
                                 {CONTENT_FIELDS.map((field) => (
                                     <div key={field.key} className="grid gap-2">
                                         <Label htmlFor={field.key}>{field.label}</Label>
-                                        {field.key === 'body' ? (
+                                        {MULTILINE_KEYS.has(field.key) ? (
                                             <textarea
                                                 id={field.key}
-                                                className="min-h-20 rounded-md border bg-transparent p-2 text-sm"
+                                                className={`${field.key === 'aboutCookies' ? 'min-h-48' : 'min-h-20'} rounded-md border bg-transparent p-2 text-sm`}
                                                 value={c[field.key] ?? ''}
                                                 onChange={(e) => setField(field.key, e.target.value)}
                                             />

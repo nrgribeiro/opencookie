@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\Scanner\HttpSiteScanner;
+use App\Services\Scanner\PlaywrightSiteScanner;
 use App\Services\Scanner\SiteScanner;
 use App\Services\Verification\DnsTxtRecordResolver;
 use App\Services\Verification\TxtRecordResolver;
@@ -23,7 +24,9 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(TxtRecordResolver::class, DnsTxtRecordResolver::class);
-        $this->app->bind(SiteScanner::class, HttpSiteScanner::class);
+        $this->app->bind(SiteScanner::class, fn () => config('scanner.driver') === 'playwright'
+            ? new PlaywrightSiteScanner
+            : new HttpSiteScanner);
     }
 
     /**

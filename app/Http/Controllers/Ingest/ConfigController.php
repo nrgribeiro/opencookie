@@ -17,12 +17,44 @@ class ConfigController extends Controller
     /** Config cache TTL — short so banner publishes propagate quickly. */
     public const CACHE_TTL = 300;
 
-    /** Standard consent categories. Necessary is locked on (BAN-3). */
+    /** Standard consent categories. Necessary is locked on (BAN-3). English is the fallback. */
     private const CATEGORIES = [
         ['id' => 'necessary', 'required' => true, 'name' => 'Necessary', 'description' => 'Required for the site to function. Always on.'],
         ['id' => 'preferences', 'required' => false, 'name' => 'Preferences', 'description' => 'Remembers your settings and choices.'],
         ['id' => 'statistics', 'required' => false, 'name' => 'Statistics', 'description' => 'Helps us understand how the site is used.'],
         ['id' => 'marketing', 'required' => false, 'name' => 'Marketing', 'description' => 'Used to deliver and measure ads.'],
+    ];
+
+    /**
+     * Built-in category translations (name, description) per base language.
+     * Falls back to English (CATEGORIES) for any language not listed here, so
+     * non-English visitors get localized category labels (informed consent).
+     */
+    private const CATEGORY_I18N = [
+        'necessary' => [
+            'pt' => ['Necessários', 'Essenciais ao funcionamento do site. Sempre ativos.'],
+            'de' => ['Notwendig', 'Für den Betrieb der Website erforderlich. Immer aktiv.'],
+            'fr' => ['Nécessaires', 'Indispensables au fonctionnement du site. Toujours actifs.'],
+            'es' => ['Necesarias', 'Necesarias para el funcionamiento del sitio. Siempre activas.'],
+        ],
+        'preferences' => [
+            'pt' => ['Preferências', 'Memoriza as suas definições e escolhas.'],
+            'de' => ['Präferenzen', 'Speichert Ihre Einstellungen und Auswahl.'],
+            'fr' => ['Préférences', 'Mémorise vos réglages et vos choix.'],
+            'es' => ['Preferencias', 'Recuerda sus ajustes y elecciones.'],
+        ],
+        'statistics' => [
+            'pt' => ['Estatísticas', 'Ajuda-nos a perceber como o site é utilizado.'],
+            'de' => ['Statistik', 'Hilft uns zu verstehen, wie die Website genutzt wird.'],
+            'fr' => ['Statistiques', 'Nous aide à comprendre comment le site est utilisé.'],
+            'es' => ['Estadísticas', 'Nos ayuda a entender cómo se usa el sitio.'],
+        ],
+        'marketing' => [
+            'pt' => ['Marketing', 'Utilizado para apresentar e medir anúncios.'],
+            'de' => ['Marketing', 'Wird zur Auslieferung und Messung von Werbung verwendet.'],
+            'fr' => ['Marketing', 'Utilisé pour diffuser et mesurer les publicités.'],
+            'es' => ['Marketing', 'Se utiliza para mostrar y medir anuncios.'],
+        ],
     ];
 
     public function __invoke(string $domainUid): JsonResponse
@@ -124,11 +156,24 @@ class ConfigController extends Controller
     {
         $languages = $banner->languages ?: ['en'];
 
-        return collect(self::CATEGORIES)->map(fn (array $cat) => [
-            'id' => $cat['id'],
-            'required' => $cat['required'],
-            'name' => collect($languages)->mapWithKeys(fn ($l) => [$l => $cat['name']])->all(),
-            'description' => collect($languages)->mapWithKeys(fn ($l) => [$l => $cat['description']])->all(),
-        ])->all();
+        return collect(self::CATEGORIES)->map(function (array $cat) use ($languages) {
+            $i18n = self::CATEGORY_I18N[$cat['id']] ?? [];
+            $name = [];
+            $description = [];
+
+            foreach ($languages as $l) {
+                $base = strtolower(explode('-', (string) $l)[0]);
+                [$n, $d] = $i18n[$base] ?? [$cat['name'], $cat['description']];
+                $name[$l] = $n;
+                $description[$l] = $d;
+            }
+
+            return [
+                'id' => $cat['id'],
+                'required' => $cat['required'],
+                'name' => $name,
+                'description' => $description,
+            ];
+        })->all();
     }
 }

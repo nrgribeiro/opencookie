@@ -120,6 +120,19 @@ it('increments the impression aggregate', function () {
     expect($row->count)->toBe(2);
 });
 
+it('marks the domain banner live on the first impression beacon', function () {
+    $domain = liveDomain();
+    $domain->update(['banner_live' => false]);
+    expect($domain->fresh()->banner_live)->toBeFalse();
+
+    $this->postJson(route('ingest.impression', $domain->domain_uid), [
+        'bannerVersion' => 1,
+        'language' => 'en',
+    ])->assertNoContent();
+
+    expect($domain->fresh()->banner_live)->toBeTrue();
+});
+
 it('serves the cookie declaration as javascript', function () {
     $domain = liveDomain();
     Cookie::factory()->for($domain)->create(['name' => '_ga', 'source_domain' => 'google.com']);

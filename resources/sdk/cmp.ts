@@ -162,6 +162,73 @@ function activateScripts(categories: Categories): void {
     });
 }
 
+// --- Auto-block known third-party tags (US-SDK-1 AC2, "where feasible") -----
+// Intercepts scripts inserted via the DOM before they connect — and thus before
+// they execute — and neutralizes known tracking vendors until consent. Static
+// <script src> already in the served HTML can't be caught this way; those should
+// still be tagged manually with type="text/plain" data-cmp-category.
+
+const VENDOR_CATEGORY: { re: RegExp; category: string }[] = [
+    { re: /googletagmanager\.com|google-analytics\.com|\/gtag\/js/i, category: 'statistics' },
+    { re: /static\.hotjar\.com|script\.hotjar\.com/i, category: 'statistics' },
+    { re: /clarity\.ms/i, category: 'statistics' },
+    { re: /cdn\.segment\.com/i, category: 'statistics' },
+    { re: /connect\.facebook\.net|facebook\.com\/tr/i, category: 'marketing' },
+    { re: /doubleclick\.net|googlesyndication\.com|googleadservices\.com/i, category: 'marketing' },
+];
+
+function vendorCategory(src: string): string | null {
+    for (const v of VENDOR_CATEGORY) if (v.re.test(src)) return v.category;
+    return null;
+}
+
+function consentGrants(category: string): boolean {
+    if (category === 'necessary') return true;
+    return !!loadStored()?.categories?.[category];
+}
+
+function maybeBlockScript(node: Node): void {
+    if (!(node instanceof HTMLScriptElement)) return;
+    if (node.type === 'text/plain') return; // already blocked or manually tagged
+    const src = node.getAttribute('src') ?? '';
+    if (!src) return;
+    const category = vendorCategory(src);
+    if (!category || consentGrants(category)) return;
+    node.type = 'text/plain';
+    node.setAttribute('data-cmp-category', category);
+}
+
+let autoBlockInstalled = false;
+
+function installAutoBlock(): void {
+    if (autoBlockInstalled) return;
+    autoBlockInstalled = true;
+
+    const proto = Node.prototype as Node & {
+        appendChild: <T extends Node>(n: T) => T;
+        insertBefore: <T extends Node>(n: T, ref: Node | null) => T;
+    };
+    const origAppend = proto.appendChild;
+    const origInsert = proto.insertBefore;
+
+    proto.appendChild = function <T extends Node>(this: Node, n: T): T {
+        try {
+            maybeBlockScript(n);
+        } catch {
+            /* ignore */
+        }
+        return origAppend.call(this, n) as T;
+    };
+    proto.insertBefore = function <T extends Node>(this: Node, n: T, ref: Node | null): T {
+        try {
+            maybeBlockScript(n);
+        } catch {
+            /* ignore */
+        }
+        return origInsert.call(this, n, ref) as T;
+    };
+}
+
 // --- Apply + emit -----------------------------------------------------------
 
 function applyConsent(categories: Categories): void {
@@ -177,7 +244,8 @@ function sendConsent(method: string, categories: Categories, consentId: string):
         bannerVersion: config?.bannerVersion ?? 0,
         policyVersion: config?.policyVersion ?? 0,
         categories,
-        language: config?.defaultLanguage ?? 'en',
+        consentTextHash: consentTextHash(),
+        language: currentLang(),
         ts: new Date().toISOString(),
     });
     fetch(`${apiBase}/${domainId}/consent`, {
@@ -194,7 +262,7 @@ function sendImpression(): void {
     fetch(`${apiBase}/${domainId}/impression`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bannerVersion: config?.bannerVersion ?? 0, language: config?.defaultLanguage ?? 'en' }),
+        body: JSON.stringify({ bannerVersion: config?.bannerVersion ?? 0, language: currentLang() }),
         keepalive: true,
     }).catch(() => {});
 }
@@ -217,6 +285,7 @@ function choose(method: string, categories: Categories): void {
     applyConsent(full);
     sendConsent(method, full, consentId);
     removeBanner();
+    whenBody(renderReopenWidget);
 }
 
 // --- UI ---------------------------------------------------------------------
@@ -231,10 +300,67 @@ const FALLBACK_LABELS: Record<string, string> = {
     learnMore: 'More info',
     noCookies: 'No cookies in this category.',
     sessionExpiry: 'Session',
+    tabCookies: 'Cookies',
+    tabAbout: 'About cookies',
+    manage: 'Cookie settings',
 };
 
+const DEFAULT_ABOUT_COOKIES =
+    'Cookies are small text files that can be used by websites to make a user’s experience more efficient.\n\n' +
+    'Under the law, we can store cookies on your device if they are strictly necessary for the operation of this site. ' +
+    'For all other types of cookies we need your permission.\n' +
+    'This site uses different types of cookies. Some cookies are placed by third-party services that appear on our pages.\n' +
+    'You can at any time change or withdraw your consent from the cookie declaration on our website.\n\n' +
+    'Learn more about who we are, how you can contact us and how we process personal data in our Privacy Policy.\n\n' +
+    'Please state your consent ID and date when you contact us regarding your consent.';
+
+// Auto-detect visitor locale (US-BAN-4): match navigator languages against the
+// configured set (exact, then base-language), falling back to the default.
 function currentLang(): string {
-    return config?.defaultLanguage ?? 'en';
+    const langs = config?.languages ?? [];
+    const def = config?.defaultLanguage ?? 'en';
+    if (!langs.length) return def;
+
+    const nav = (navigator.languages && navigator.languages.length
+        ? navigator.languages
+        : [navigator.language]
+    ).filter(Boolean);
+
+    for (const raw of nav) {
+        const lc = raw.toLowerCase();
+        const base = lc.split('-')[0];
+        const hit =
+            langs.find((l) => l.toLowerCase() === lc) ??
+            langs.find((l) => l.toLowerCase().split('-')[0] === base);
+        if (hit) return hit;
+    }
+    return def;
+}
+
+// FNV-1a 32-bit → hex. Deterministic, synchronous. Used to record a fingerprint
+// of the consent text the visitor actually saw (US-LOG-1 proof) — not security.
+function hashStr(s: string): string {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 0x01000193);
+    }
+    return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+// Hash of the exact text shown in the visitor's language, for consent proof.
+function consentTextHash(): string {
+    const parts = [
+        currentLang(),
+        t('title'),
+        t('body'),
+        t('acceptAll'),
+        t('rejectAll'),
+        t('customize'),
+        config?.policyUrl ?? '',
+        aboutCookiesText(),
+    ];
+    return hashStr(parts.join('␟'));
 }
 
 function t(key: string): string {
@@ -259,9 +385,62 @@ function cookiePurpose(cookie: CookieDetail): string {
     return cookie.purpose?.[lang] ?? cookie.purpose?.[config?.defaultLanguage ?? 'en'] ?? '';
 }
 
+function aboutCookiesText(): string {
+    const lang = currentLang();
+    const def = config?.defaultLanguage ?? 'en';
+    return (
+        config?.content?.[lang]?.aboutCookies ||
+        config?.content?.[def]?.aboutCookies ||
+        DEFAULT_ABOUT_COOKIES
+    );
+}
+
 function removeBanner(): void {
     bannerEl?.remove();
     bannerEl = null;
+}
+
+function whenBody(fn: () => void): void {
+    if (document.body) fn();
+    else document.addEventListener('DOMContentLoaded', fn, { once: true });
+}
+
+// Persistent re-open widget (US-SDK-5 / Art. 7(3)): always available once a
+// choice exists so withdrawal is as easy as giving consent.
+let widgetEl: HTMLElement | null = null;
+
+function renderReopenWidget(): void {
+    if (widgetEl) return;
+    const dark = config?.layout?.theme === 'dark';
+    const accent = config?.layout?.colors?.accent ?? '#2563eb';
+    const right = config?.layout?.position === 'bottom-right';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('aria-label', t('manage'));
+    btn.title = t('manage');
+    btn.textContent = '🍪';
+    btn.style.cssText = [
+        'position:fixed',
+        'bottom:16px',
+        right ? 'right:16px' : 'left:16px',
+        'width:44px',
+        'height:44px',
+        'border-radius:50%',
+        'border:0',
+        'cursor:pointer',
+        'font-size:20px',
+        'line-height:44px',
+        'text-align:center',
+        'padding:0',
+        'z-index:2147483646',
+        'box-shadow:0 4px 16px rgba(0,0,0,.25)',
+        dark ? 'background:#262626;color:#fafafa' : 'background:#fff;color:#171717',
+        `border:1px solid ${accent}`,
+    ].join(';');
+    btn.addEventListener('click', () => api.showSettings());
+    document.body.appendChild(btn);
+    widgetEl = btn;
 }
 
 function renderBanner(): void {
@@ -441,7 +620,8 @@ function renderDetailsModal(): void {
         'width:100%',
         'max-width:860px',
         'max-height:90vh',
-        'overflow:auto',
+        'display:flex',
+        'flex-direction:column',
         'border-radius:14px',
         'box-shadow:0 16px 60px rgba(0,0,0,.4)',
         dark ? 'background:#171717;color:#fafafa' : 'background:#fff;color:#171717',
@@ -454,9 +634,6 @@ function renderDetailsModal(): void {
         'justify-content:space-between',
         'padding:18px 22px',
         'border-bottom:1px solid ' + (dark ? '#2a2a2a' : '#eee'),
-        'position:sticky',
-        'top:0',
-        dark ? 'background:#171717' : 'background:#fff',
     ].join(';');
 
     const heading = document.createElement('h2');
@@ -471,8 +648,89 @@ function renderDetailsModal(): void {
     close.setAttribute('aria-label', t('close'));
     header.append(heading, close);
 
+    const tabs = document.createElement('div');
+    tabs.setAttribute('role', 'tablist');
+    tabs.style.cssText = [
+        'display:flex',
+        'gap:0',
+        'padding:0 22px',
+        'border-bottom:1px solid ' + (dark ? '#2a2a2a' : '#eee'),
+    ].join(';');
+
+    const cookiesPanel = buildCookiesPanel(dark, accent);
+    const aboutPanel = buildAboutPanel(dark);
+
+    const tabCookies = makeTab(t('tabCookies'), true, dark, accent);
+    const tabAbout = makeTab(t('tabAbout'), false, dark, accent);
+    tabs.append(tabCookies, tabAbout);
+
     const body = document.createElement('div');
-    body.style.cssText = 'padding:18px 22px;display:flex;flex-direction:column;gap:18px';
+    body.style.cssText = 'flex:1;overflow:auto;padding:18px 22px';
+    body.append(cookiesPanel);
+
+    const showCookies = (): void => {
+        markActiveTab(tabCookies, true, dark, accent);
+        markActiveTab(tabAbout, false, dark, accent);
+        body.replaceChildren(cookiesPanel);
+    };
+    const showAbout = (): void => {
+        markActiveTab(tabCookies, false, dark, accent);
+        markActiveTab(tabAbout, true, dark, accent);
+        body.replaceChildren(aboutPanel);
+    };
+    tabCookies.addEventListener('click', showCookies);
+    tabAbout.addEventListener('click', showAbout);
+
+    panel.append(header, tabs, body);
+    overlay.append(panel);
+    document.body.appendChild(overlay);
+    detailsModalEl = overlay;
+    document.addEventListener('keydown', detailsKeyHandler);
+}
+
+function makeTab(label: string, active: boolean, dark: boolean, accent: string): HTMLButtonElement {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('role', 'tab');
+    b.textContent = label;
+    markActiveTab(b, active, dark, accent);
+    return b;
+}
+
+function markActiveTab(btn: HTMLButtonElement, active: boolean, dark: boolean, accent: string): void {
+    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+    btn.style.cssText = [
+        'appearance:none',
+        'background:transparent',
+        'border:0',
+        'padding:12px 16px',
+        'margin-bottom:-1px',
+        'cursor:pointer',
+        'font:inherit',
+        'font-weight:' + (active ? '600' : '500'),
+        'color:' + (active ? accent : dark ? '#cfcfcf' : '#444'),
+        'border-bottom:2px solid ' + (active ? accent : 'transparent'),
+    ].join(';');
+}
+
+function buildAboutPanel(dark: boolean): HTMLElement {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-direction:column;gap:12px;max-width:680px';
+
+    const text = aboutCookiesText();
+    text.split(/\n\n+/).forEach((para) => {
+        const p = document.createElement('p');
+        p.style.cssText = 'margin:0;white-space:pre-wrap;color:' + (dark ? '#e5e5e5' : '#222');
+        p.textContent = para.trim();
+        wrap.append(p);
+    });
+
+    return wrap;
+}
+
+function buildCookiesPanel(dark: boolean, accent: string): HTMLElement {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-direction:column;gap:18px';
 
     const details = config?.cookieDetails ?? {};
 
@@ -557,14 +815,10 @@ function renderDetailsModal(): void {
             section.append(tableWrap);
         }
 
-        body.append(section);
+        wrap.append(section);
     });
 
-    panel.append(header, body);
-    overlay.append(panel);
-    document.body.appendChild(overlay);
-    detailsModalEl = overlay;
-    document.addEventListener('keydown', detailsKeyHandler);
+    return wrap;
 }
 
 function button(label: string, css: string, onClick: () => void): HTMLButtonElement {
@@ -597,6 +851,7 @@ window.CMP = api;
 
 async function boot(): Promise<void> {
     setConsentDefaults();
+    installAutoBlock();
 
     if (!domainId) return;
 
@@ -615,6 +870,7 @@ async function boot(): Promise<void> {
 
     if (isValid(stored, config)) {
         applyConsent((stored as StoredConsent).categories);
+        whenBody(renderReopenWidget);
         return;
     }
 
