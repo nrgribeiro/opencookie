@@ -141,6 +141,9 @@ class ConfigController extends Controller
                     'providerUrl' => $cookie->provider_url ?: null,
                     'purpose' => $purposePerLang,
                     'expiry' => (string) ($cookie->expiry ?? ''),
+                    'retention' => $cookie->retention ?: null,
+                    'dataController' => $cookie->data_controller ?: null,
+                    'gdprPortalUrl' => $cookie->gdpr_portal_url ?: null,
                     'sourceDomain' => $cookie->source_domain,
                     'isFirstParty' => (bool) $cookie->is_first_party,
                 ];

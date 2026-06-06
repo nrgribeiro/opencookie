@@ -19,6 +19,8 @@ class CookieClassification extends Model
         'provider_url',
         'purpose',
         'retention',
+        'data_controller',
+        'gdpr_portal_url',
         'is_wildcard',
         'source',
     ];

@@ -43,6 +43,23 @@ class CookieClassifier
         'ads.linkedin.com' => CookieCategory::Marketing,
     ];
 
+    /**
+     * Exact / prefix cookie-name → provider (fallback when the DB is empty).
+     * GA's _ga* cookies are first-party by domain but set by Google's JS, so
+     * they must still be attributed to "Google Analytics".
+     */
+    private const PROVIDER_NAME_MAP = [
+        '_ga' => 'Google Analytics',
+        '_gid' => 'Google Analytics',
+        '_gat' => 'Google Analytics',
+        '_gcl_au' => 'Google Ads',
+        '_fbp' => 'Meta (Facebook)',
+        'fr' => 'Meta (Facebook)',
+        '_hjSessionUser' => 'Hotjar',
+        'IDE' => 'Google DoubleClick',
+        'NID' => 'Google',
+    ];
+
     /** Exact-name index: lower(name) → list of classifications. */
     private ?array $exact = null;
 
@@ -53,6 +70,61 @@ class CookieClassifier
     {
         return $this->lookup($name, $sourceDomain)?->category
             ?? $this->fallbackCategory($name, $sourceDomain);
+    }
+
+    /**
+     * Best-effort provider name for a cookie: DB classification first, then the
+     * built-in prefix map. Returns null when nothing matches.
+     */
+    public function provider(string $name, ?string $sourceDomain = null): ?string
+    {
+        $fromDb = $this->lookup($name, $sourceDomain)?->provider;
+        if ($fromDb) {
+            return $fromDb;
+        }
+
+        foreach (self::PROVIDER_NAME_MAP as $known => $provider) {
+            if ($name === $known || Str::startsWith($name, $known)) {
+                return $provider;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Best-effort purpose/description for a cookie, from the DB classification.
+     * Returns null when there is no DB match or the match has no description.
+     */
+    public function purpose(string $name, ?string $sourceDomain = null): ?string
+    {
+        $purpose = $this->lookup($name, $sourceDomain)?->purpose;
+
+        return $purpose !== null && $purpose !== '' ? $purpose : null;
+    }
+
+    /** Documented retention period (e.g. "2 years", "session"), DB only. */
+    public function retention(string $name, ?string $sourceDomain = null): ?string
+    {
+        $v = $this->lookup($name, $sourceDomain)?->retention;
+
+        return $v !== null && $v !== '' ? $v : null;
+    }
+
+    /** Data controller responsible for the cookie (e.g. "Google"), DB only. */
+    public function dataController(string $name, ?string $sourceDomain = null): ?string
+    {
+        $v = $this->lookup($name, $sourceDomain)?->data_controller;
+
+        return $v !== null && $v !== '' ? $v : null;
+    }
+
+    /** Provider's privacy / GDPR rights portal URL, DB only. */
+    public function gdprPortalUrl(string $name, ?string $sourceDomain = null): ?string
+    {
+        $v = $this->lookup($name, $sourceDomain)?->gdpr_portal_url;
+
+        return $v !== null && $v !== '' ? $v : null;
     }
 
     /**
