@@ -4,6 +4,7 @@ namespace App\Services\Scanner;
 
 use App\Enums\CookieType;
 use App\Models\Domain;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\Process;
@@ -82,6 +83,6 @@ class PlaywrightSiteScanner implements SiteScanner
             return 'Scanner error: '.$decoded['error'];
         }
 
-        return 'Scanner failed'.($stderr !== '' ? ': '.\Illuminate\Support\Str::limit($stderr, 200) : '.');
+        return 'Scanner failed'.($stderr !== '' ? ': '.Str::limit($stderr, 200) : '.');
     }
 }

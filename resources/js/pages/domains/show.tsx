@@ -51,6 +51,9 @@ interface CookieRow {
     purpose: string | null;
     purposeTranslations: Record<string, string>;
     expiry: string | null;
+    retention: string | null;
+    dataController: string | null;
+    gdprPortalUrl: string | null;
     type: string;
     sourceDomain: string | null;
     isFirstParty: boolean;
@@ -196,6 +199,100 @@ function ProviderUrlDialog({
     );
 }
 
+function GdprDetailsDialog({
+    cookie,
+    onSave,
+}: {
+    cookie: CookieRow;
+    onSave: (values: {
+        retention: string | null;
+        dataController: string | null;
+        gdprPortalUrl: string | null;
+    }) => void;
+}) {
+    const [open, setOpen] = useState(false);
+    const [retention, setRetention] = useState(cookie.retention ?? '');
+    const [dataController, setDataController] = useState(cookie.dataController ?? '');
+    const [gdprPortalUrl, setGdprPortalUrl] = useState(cookie.gdprPortalUrl ?? '');
+
+    const hasAny = cookie.retention || cookie.dataController || cookie.gdprPortalUrl;
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm" variant="outline">
+                    {hasAny ? 'GDPR details' : 'Add GDPR'}
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogTitle>GDPR details — {cookie.name}</DialogTitle>
+                <DialogDescription>
+                    Shown in the banner&apos;s details modal. Overrides the
+                    auto-classified values and survives future scans.
+                </DialogDescription>
+                <div className="grid gap-3 py-2">
+                    <div className="grid gap-1">
+                        <Label htmlFor={`ret-${cookie.id}`}>Retention period</Label>
+                        <input
+                            id={`ret-${cookie.id}`}
+                            type="text"
+                            placeholder="e.g. 2 years"
+                            className="rounded border bg-background px-3 py-2 text-sm"
+                            value={retention}
+                            maxLength={255}
+                            onChange={(e) => setRetention(e.target.value)}
+                        />
+                    </div>
+                    <div className="grid gap-1">
+                        <Label htmlFor={`ctrl-${cookie.id}`}>Data controller</Label>
+                        <input
+                            id={`ctrl-${cookie.id}`}
+                            type="text"
+                            placeholder="e.g. Google"
+                            className="rounded border bg-background px-3 py-2 text-sm"
+                            value={dataController}
+                            maxLength={255}
+                            onChange={(e) => setDataController(e.target.value)}
+                        />
+                    </div>
+                    <div className="grid gap-1">
+                        <Label htmlFor={`portal-${cookie.id}`}>
+                            Privacy &amp; GDPR rights portal URL
+                        </Label>
+                        <input
+                            id={`portal-${cookie.id}`}
+                            type="url"
+                            inputMode="url"
+                            placeholder="https://provider.example/privacy"
+                            className="rounded border bg-background px-3 py-2 text-sm"
+                            value={gdprPortalUrl}
+                            maxLength={2048}
+                            onChange={(e) => setGdprPortalUrl(e.target.value)}
+                        />
+                    </div>
+                </div>
+                <DialogFooter className="gap-2">
+                    <DialogClose asChild>
+                        <Button variant="secondary">Cancel</Button>
+                    </DialogClose>
+                    <Button
+                        onClick={() => {
+                            onSave({
+                                retention: retention.trim() || null,
+                                dataController: dataController.trim() || null,
+                                gdprPortalUrl: gdprPortalUrl.trim() || null,
+                            });
+                            setOpen(false);
+                        }}
+                    >
+                        Save
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 function CopyButton({ value }: { value: string }) {
     const [copied, setCopied] = useState(false);
     return (
@@ -301,6 +398,29 @@ export default function DomainsShow({
                 provider: cookie.provider ?? undefined,
                 providerUrl: url,
                 purpose: cookie.purpose ?? undefined,
+            },
+            { preserveScroll: true },
+        );
+    };
+
+    const saveGdprDetails = (
+        cookie: CookieRow,
+        values: {
+            retention: string | null;
+            dataController: string | null;
+            gdprPortalUrl: string | null;
+        },
+    ) => {
+        router.patch(
+            CookieController.update(cookie.id).url,
+            {
+                category:
+                    cookie.category === 'unclassified' ? 'necessary' : cookie.category,
+                provider: cookie.provider ?? undefined,
+                purpose: cookie.purpose ?? undefined,
+                retention: values.retention,
+                dataController: values.dataController,
+                gdprPortalUrl: values.gdprPortalUrl,
             },
             { preserveScroll: true },
         );
@@ -542,10 +662,16 @@ export default function DomainsShow({
                                                     </Select>
                                                 </td>
                                                 <td className="py-2 pr-4">
-                                                    <ProviderUrlDialog
-                                                        cookie={cookie}
-                                                        onSave={(url) => saveProviderUrl(cookie, url)}
-                                                    />
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <ProviderUrlDialog
+                                                            cookie={cookie}
+                                                            onSave={(url) => saveProviderUrl(cookie, url)}
+                                                        />
+                                                        <GdprDetailsDialog
+                                                            cookie={cookie}
+                                                            onSave={(v) => saveGdprDetails(cookie, v)}
+                                                        />
+                                                    </div>
                                                 </td>
                                                 {multiLang && (
                                                     <td className="py-2">

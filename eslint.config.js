@@ -103,6 +103,19 @@ export default [
         },
     },
     {
+        // Node-side headless crawler — Node globals, tolerate intentional
+        // empty catch blocks used to skip unreadable storage/URLs.
+        files: ['scanner/**/*.mjs'],
+        languageOptions: {
+            globals: {
+                ...globals.node,
+            },
+        },
+        rules: {
+            'no-empty': ['error', { allowEmptyCatch: true }],
+        },
+    },
+    {
         ignores: [
             'vendor',
             'node_modules',

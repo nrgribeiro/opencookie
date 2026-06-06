@@ -20,6 +20,9 @@ class CookieOverride extends Model
         'category',
         'provider',
         'provider_url',
+        'retention',
+        'data_controller',
+        'gdpr_portal_url',
         'purpose',
         'purpose_translations',
     ];

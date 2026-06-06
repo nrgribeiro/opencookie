@@ -117,6 +117,8 @@ class ImportOpenCookieDatabase extends Command
                 'provider_url' => null,
                 'purpose' => $this->nullable($line[$idx['description']] ?? null),
                 'retention' => $this->nullable($line[$idx['retention']] ?? null),
+                'data_controller' => $this->nullable($line[$idx['controller']] ?? null),
+                'gdpr_portal_url' => $this->nullable($line[$idx['portal']] ?? null),
                 'is_wildcard' => $this->truthy($line[$idx['wildcard']] ?? null),
             ];
         }
@@ -154,6 +156,8 @@ class ImportOpenCookieDatabase extends Command
             'domain' => $find(['domain']),
             'description' => $find(['description']),
             'retention' => $find(['retention']),
+            'controller' => $find(['data controller', 'controller']),
+            'portal' => $find(['gdpr rights', 'privacy & gdpr', 'rights portal', 'portals']),
             'wildcard' => $find(['wildcard']),
         ];
     }

@@ -25,6 +25,14 @@ class RunScanJob implements ShouldQueue
     /** Free-tier crawl cap (functional-spec §8). */
     public const PAGE_LIMIT = 100;
 
+    /**
+     * Wall-clock cap for the job. Must exceed the scanner process timeout
+     * (config scanner.playwright.timeout, default 180s) so the worker does
+     * not SIGALRM-kill the job mid-crawl — a hard kill bypasses the catch
+     * block below, leaving the scan stuck "running" with no error logged.
+     */
+    public int $timeout = 240;
+
     public function __construct(public readonly int $scanId) {}
 
     public function handle(SiteScanner $scanner, CookieClassifier $classifier): void
@@ -53,6 +61,9 @@ class RunScanJob implements ShouldQueue
 
                 $override = $overrides->get($key);
                 $category = $override?->category ?? $classifier->classify($detected->name, $detected->sourceDomain);
+                $provider = $override?->provider
+                    ?? $detected->provider
+                    ?? $classifier->provider($detected->name, $detected->sourceDomain);
 
                 $existing = $domain->cookies()
                     ->where('name', $detected->name)
@@ -63,9 +74,16 @@ class RunScanJob implements ShouldQueue
                     ['name' => $detected->name, 'source_domain' => $detected->sourceDomain],
                     [
                         'scan_id' => $scan->id,
-                        'provider' => $override?->provider ?? $detected->provider,
+                        'provider' => $provider,
                         'category' => $category,
-                        'purpose' => $override?->purpose,
+                        'purpose' => $override?->purpose
+                            ?? $classifier->purpose($detected->name, $detected->sourceDomain),
+                        'retention' => $override?->retention
+                            ?? $classifier->retention($detected->name, $detected->sourceDomain),
+                        'data_controller' => $override?->data_controller
+                            ?? $classifier->dataController($detected->name, $detected->sourceDomain),
+                        'gdpr_portal_url' => $override?->gdpr_portal_url
+                            ?? $classifier->gdprPortalUrl($detected->name, $detected->sourceDomain),
                         'expiry' => $detected->expiry,
                         'type' => $detected->type,
                         'is_first_party' => $detected->isFirstParty,
