@@ -15,8 +15,10 @@ scripts, and keep an auditable log of every choice — built **GDPR-first**
 
 - **Domain management & verification** — register a domain, verify ownership via
   a token, get a ready-to-paste embed snippet.
-- **Cookie scanner** — crawl a site to detect first/third-party cookies and
-  trackers, grouped by category.
+- **Cookie scanner** — crawl a site (multi-page, same-host) to detect
+  first/third-party cookies and trackers, grouped by category. Two drivers: a
+  dependency-free HTTP crawler, or a headless Chromium crawler that executes JS
+  and captures client-side cookies (see [Cookie Scanning](#cookie-scanning)).
 - **Cookie classification** — cookies auto-classified from an in-house database
   seeded from the public [Open Cookie Database](https://github.com/jkwakman/Open-Cookie-Database),
   with per-domain overrides.
@@ -125,6 +127,42 @@ npm run build:sdk   # consent SDK
 > rebuild so visitors receive the latest version.
 
 ---
+
+## Cookie Scanning
+
+Scans run as queued jobs (`RunScanJob`, up to 100 pages per domain). The active
+scanner is chosen by `SCANNER_DRIVER`:
+
+| Driver | JS executed? | Detects | Dependencies |
+|--------|:---:|---------|--------------|
+| `http` *(default)* | ❌ | `Set-Cookie` headers, third-party `<script src>` hosts | none |
+| `playwright` | ✅ | full browser cookie jar incl. **client-side cookies** (`_ga`, `_fbp`, …), `localStorage`/`sessionStorage` keys, third-party script/pixel hosts | Node + Playwright/Chromium |
+
+The HTTP driver is fine for a first pass, but most analytics/marketing cookies
+are written by JavaScript and are **only** seen by the `playwright` driver.
+
+### Enabling the headless (Playwright) driver
+
+```bash
+npm install                  # installs the `playwright` package
+npm run scan:install         # downloads Chromium (npx playwright install chromium)
+```
+
+Then set in `.env`:
+
+```dotenv
+SCANNER_DRIVER=playwright
+# optional overrides:
+SCANNER_NODE_BINARY=node
+SCANNER_TIMEOUT=180          # whole-crawl wall-clock cap (seconds)
+SCANNER_PAGE_TIMEOUT_MS=15000
+```
+
+The PHP scanner ([`PlaywrightSiteScanner`](app/Services/Scanner/PlaywrightSiteScanner.php))
+shells out to [`scanner/crawl.mjs`](scanner/crawl.mjs) and parses its JSON. If
+the crawl process fails (e.g. Chromium missing), the scan is marked **failed**
+with a clear error rather than silently returning partial data. The queue worker
+(`php artisan queue:work`) must run on a host where Node + Chromium are available.
 
 ## Embedding the SDK on a Site
 
