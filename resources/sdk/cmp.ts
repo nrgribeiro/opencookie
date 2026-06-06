@@ -13,6 +13,9 @@ interface CookieDetail {
     providerUrl: string | null;
     purpose: Record<string, string>;
     expiry: string;
+    retention: string | null;
+    dataController: string | null;
+    gdprPortalUrl: string | null;
     sourceDomain: string | null;
     isFirstParty: boolean;
 }
@@ -297,6 +300,9 @@ const FALLBACK_LABELS: Record<string, string> = {
     close: 'Close',
     providerLabel: 'Provider',
     expiryLabel: 'Expiry',
+    retentionLabel: 'Retention',
+    controllerLabel: 'Data controller',
+    gdprPortalLabel: 'Privacy & GDPR rights',
     learnMore: 'More info',
     noCookies: 'No cookies in this category.',
     sessionExpiry: 'Session',
@@ -777,6 +783,7 @@ function buildCookiesPanel(dark: boolean, accent: string): HTMLElement {
                 '<th style="padding:8px 10px;font-weight:600">' + escapeHtml(t('providerLabel')) + '</th>' +
                 '<th style="padding:8px 10px;font-weight:600">Purpose</th>' +
                 '<th style="padding:8px 10px;font-weight:600">' + escapeHtml(t('expiryLabel')) + '</th>' +
+                '<th style="padding:8px 10px;font-weight:600">' + escapeHtml(t('retentionLabel')) + '</th>' +
                 '</tr>';
 
             const tbody = document.createElement('tbody');
@@ -800,7 +807,22 @@ function buildCookiesPanel(dark: boolean, accent: string): HTMLElement {
                     a.style.cssText = `color:${accent};text-decoration:underline`;
                     providerCell.append(a);
                 } else {
-                    providerCell.textContent = providerText;
+                    providerCell.append(document.createTextNode(providerText));
+                }
+                if (cookie.dataController) {
+                    const ctrl = document.createElement('div');
+                    ctrl.style.cssText = 'font-size:11px;opacity:.6;margin-top:2px';
+                    ctrl.textContent = t('controllerLabel') + ': ' + cookie.dataController;
+                    providerCell.append(ctrl);
+                }
+                if (cookie.gdprPortalUrl) {
+                    const portal = document.createElement('a');
+                    portal.href = cookie.gdprPortalUrl;
+                    portal.target = '_blank';
+                    portal.rel = 'noopener noreferrer';
+                    portal.textContent = t('gdprPortalLabel');
+                    portal.style.cssText = `display:block;font-size:11px;margin-top:2px;color:${accent};text-decoration:underline`;
+                    providerCell.append(portal);
                 }
 
                 const purposeCell = document.createElement('td');
@@ -811,7 +833,11 @@ function buildCookiesPanel(dark: boolean, accent: string): HTMLElement {
                 expiryCell.style.cssText = 'padding:8px 10px;vertical-align:top;white-space:nowrap';
                 expiryCell.textContent = cookie.expiry || t('sessionExpiry');
 
-                tr.append(nameCell, providerCell, purposeCell, expiryCell);
+                const retentionCell = document.createElement('td');
+                retentionCell.style.cssText = 'padding:8px 10px;vertical-align:top;white-space:nowrap';
+                retentionCell.textContent = cookie.retention || '—';
+
+                tr.append(nameCell, providerCell, purposeCell, expiryCell, retentionCell);
                 tbody.append(tr);
             });
 
@@ -847,8 +873,10 @@ const api: CmpApi = {
     getConsent: () => loadStored()?.categories ?? null,
     onConsentChange: (cb) => listeners.push(cb),
     showSettings: () => {
+        // Reopen (e.g. floating widget) shows the banner with the category
+        // options hidden; the Customize button reveals them. Auto-opening the
+        // panel here made Customize a no-op (panel already visible).
         if (!bannerEl) renderBanner();
-        if (bannerEl) renderCustomize(bannerEl);
     },
     showDetails: () => renderDetailsModal(),
 };
