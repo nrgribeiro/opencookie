@@ -16,6 +16,7 @@ Decisions inherit the launch constraints in functional-spec §1 / §8.
 |-------|--------|
 | Backend framework | Laravel 13, PHP 8.4 (min ≥ 8.4.1 — locked Symfony 8.1; CI matrix 8.4 + 8.5) |
 | Auth | Laravel Fortify + `@laravel/passkeys` (WebAuthn) |
+| Roles / permissions | `spatie/laravel-permission` (`super_admin` role gates the admin area) |
 | Dashboard UI | Inertia 3 + React 19 (React Compiler) + TypeScript |
 | UI kit | Radix / shadcn, Tailwind 4, Sonner (toasts), Lucide icons |
 | Build | Vite 8, Wayfinder (typed routes, pre-1.0) |
@@ -101,9 +102,16 @@ Cloud provider: **Microsoft Azure**. All resources provisioned in EU regions.
 
 ### 4.1 Dashboard app (Laravel + Inertia)
 - Module boundaries mirror functional spec: `Auth`, `Domains`, `Scanner`,
-  `Banner`, `Consent` (logs/export), `Declaration`, `Analytics`, `Settings`.
+  `Banner`, `Consent` (logs/export), `Declaration`, `Analytics`, `Settings`,
+  `Admin` (§4.10).
 - Suggested layout: action/service classes per module under `app/`, Inertia React
   pages under `resources/js/pages/<module>`.
+- **Admin area:** controllers under `app/Http/Controllers/Admin/`, pages under
+  `resources/js/pages/admin/`, routed under `/admin` and gated by
+  `auth` + `verified` + `role:super_admin` (Spatie middleware). A `Gate::before`
+  grants `super_admin` all abilities so it bypasses per-owner policies. Compliance
+  shown in the admin overview reuses a shared `DomainCompliance` service extracted
+  from the owner dashboard health checklist (US-DASH-3).
 - Auth via Fortify (login, register, verify email, password reset) — maps to
   US-AUTH-1..5. Passkey enrollment + sign-in via `@laravel/passkeys` (WebAuthn);
   passkeys complement password auth at launch.
@@ -156,17 +164,21 @@ Cloud provider: **Microsoft Azure**. All resources provisioned in EU regions.
 
 ### 5.1 Core tables (Postgres)
 Mirrors functional-spec §6:
-`users`, `domains`, `domain_verifications`, `scans`, `cookies`,
-`cookie_overrides`, `cookie_classifications` (OCD seed/import),
+`users` (+ `tier_id`), `tiers`, `domains`, `domain_verifications`, `scans`,
+`cookies`, `cookie_overrides`, `cookie_classifications` (OCD seed/import),
 `banner_configs` (versioned), `policy_versions`, `consent_records`,
-`notification_settings`.
+`notification_settings`. Roles use the `spatie/laravel-permission` tables
+(`roles`, `permissions`, `model_has_roles`, `model_has_permissions`,
+`role_has_permissions`).
 
 `cookies`, `cookie_overrides`, and `cookie_classifications` each carry GDPR
 metadata columns — `retention`, `data_controller`, `gdpr_portal_url` — added by
 the Jun 2026 migrations (see [data-model.md](data-model.md) §2.4–2.5).
 
 ### 5.2 Key relationships
-- `users 1─N domains` (free tier enforces max 1 active domain).
+- `tiers 1─N users`; each user has one tier (default tier if unassigned). Tier
+  limits drive the domain cap (Free = max 1) and scanner page cap.
+- `users 1─N domains` (count capped by the user's tier).
 - `domains 1─N scans 1─N cookies`.
 - `domains 1─N banner_configs` (one published version flagged).
 - `domains 1─N consent_records`.
@@ -284,8 +296,12 @@ Not a public contract; rendered via Inertia controllers. Representative routes:
 | GET | `/domains/{id}/consent/export` | US-LOG-3 |
 | GET | `/domains/{id}/analytics` | US-DASH-1 |
 | PUT | `/domains/{id}/settings` | US-SET-* |
+| GET | `/admin` | US-ADMIN-1/2/3 |
+| GET/PATCH/DELETE | `/admin/users[/{id}]` | US-ADMIN-4 |
+| GET/POST/PUT/DELETE | `/admin/tiers[/{id}]` | US-ADMIN-5 |
 
-All scoped by policy to the authenticated owner.
+Owner routes scoped by policy to the authenticated owner; `/admin/*` gated by
+`role:super_admin`.
 
 ---
 
@@ -316,6 +332,10 @@ All scoped by policy to the authenticated owner.
 - **AuthZ:** per-resource policies; deny cross-tenant access; ingest API binds
   every write to a valid `domainId` and checks `Origin`/`Referer` against the
   domain's verified hostname.
+- **Roles:** `super_admin` (Spatie) gates `/admin/*` via `role:super_admin`
+  middleware + `Gate::before`. Role grants are seeded + assignable only via the
+  admin user-management screen or the `user:make-admin` artisan command; the
+  platform enforces ≥1 super admin at all times.
 - **Input validation:** Form Requests for dashboard; strict schema validation for
   ingest payloads (reject unknown category keys, oversized bodies).
 - **Rate limiting:** per-IP + per-domain throttles on `POST /consent` and

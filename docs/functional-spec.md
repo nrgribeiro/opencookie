@@ -28,8 +28,10 @@ extension).
   opt-in for all. No geo-IP branching at launch.
 - **Consent log storage:** **Managed, EU-hosted.** Platform stores consent proof
   in EU infrastructure; owners export for audits. No self-host option at launch.
-- **Free-tier limits:** 1 domain per account, ~50k consent banner pageviews/month,
-  scanner crawls up to 100 pages per domain.
+- **Account tiers:** limits are defined per **tier** (max domains, scanner page cap,
+  monthly pageview cap, scheduled scans). The default **Free** tier = 1 domain,
+  ~50k consent banner pageviews/month, scanner crawls up to 100 pages per domain.
+  Tiers are managed by a super admin (§4.10), not hard-coded.
 - **Consent log retention:** fixed 24 months, then auto-purge.
 - **Cookie classification DB:** built and owned in-house, seeded from public open
   data (Open Cookie Database), curated over time.
@@ -43,9 +45,9 @@ extension).
 | Actor | Description |
 |-------|-------------|
 | Visitor | End user browsing a client website; gives/withdraws consent. |
-| Account Owner | Registers, owns one or more domains. |
+| Account Owner | Registers, owns one or more domains (count capped by tier). |
 | Team Member (later) | Invited user with scoped access to a domain. |
-| Platform Admin | Internal; support, abuse handling, global config. |
+| Super Admin | Internal operator with the `super_admin` role; gets an admin dashboard to manage users + tiers, view platform statistics, and signal non-compliant domains (§4.10). |
 
 ---
 
@@ -157,6 +159,22 @@ GDPR/ePrivacy demands the platform must satisfy:
 - Banner appearance/content, languages, consent expiry duration, policy version
   control (bump triggers re-consent), notification prefs (new-cookie alert email).
 
+### 4.10 Platform Administration (super admin)
+- Role-gated admin area (`super_admin` role); normal owners get 403 on `/admin/*`.
+- **Platform statistics:** totals for users, domains, verified domains, banners
+  live, scans run, consent records logged; users grouped by tier; recent signups
+  and scans.
+- **Compliance signal:** count of fully-compliant vs. non-compliant domains across
+  all accounts; list of non-compliant domains with the failing health checks
+  (reuses the §4.8 / US-DASH-3 checklist), each linked to its owner.
+- **User management:** list/search users (tier, role, domain count, signup date);
+  assign tier; grant/revoke `super_admin`; delete user (domain-scoped data removed,
+  consent logs age out by retention). Platform always keeps ≥1 super admin.
+- **Tier management:** CRUD account tiers and their limits (max domains, scanner
+  page cap, monthly pageview cap, scheduled scans allowed); exactly one default
+  tier; tier limits drive domain-creation and scanner caps (replaces hard-coded
+  free-tier constants).
+
 ---
 
 ## 5. Consent Flow (runtime)
@@ -174,7 +192,10 @@ GDPR/ePrivacy demands the platform must satisfy:
 
 ## 6. Data Model (sketch)
 
-- **User**(id, email, password_hash, verified_at, created_at)
+- **User**(id, email, password_hash, verified_at, tier_id, created_at) — role via
+  `spatie/laravel-permission` (`super_admin` | none)
+- **Tier**(id, name, slug, max_domains, max_scan_pages, monthly_pageview_cap,
+  scheduled_scans_allowed, is_default)
 - **Domain**(id, user_id, hostname, verify_status, created_at)
 - **Scan**(id, domain_id, started_at, status, pages_crawled)
 - **Cookie**(id, domain_id, name, provider, category, purpose, expiry, source,
@@ -208,13 +229,14 @@ GDPR/ePrivacy demands the platform must satisfy:
 | Ad-tech standards | Google Consent Mode v2 at launch; IAB TCF v2.2 deferred to v2. |
 | Geo-targeting | Global opt-in (banner shown to all visitors). |
 | Consent log storage | Managed, EU-hosted; export for audits; no self-host. |
-| Free-tier limits | 1 domain, ~50k pageviews/mo, scanner ≤100 pages/domain. |
+| Account tiers | Configurable `tiers` table; Free default = 1 domain, ~50k pageviews/mo, scanner ≤100 pages/domain. Super admin manages tiers + assigns them. |
+| Roles | `spatie/laravel-permission`; `super_admin` role gates the admin area. |
 | Log retention | Fixed 24 months, then auto-purge. |
 | Multi-user / teams | Deferred to v2; single owner per account at launch. |
 | Cookie classification DB | In-house, seeded from Open Cookie Database, curated. |
 
 ### Remaining to define later
-- Paid-tier structure (when free limits exceeded).
+- Paid-tier pricing/billing (tier *structure* now exists; payment is out of scope).
 - WCAG conformance target level (A / AA).
 - Pageview metering enforcement (soft warn vs. hard block at 50k).
 
