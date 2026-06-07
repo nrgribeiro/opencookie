@@ -29,6 +29,7 @@ Module ref: spec §4.3
 - **Given** a completed scan, **then** each cookie is assigned a category (Necessary / Preferences / Statistics / Marketing) using the in-house cookie DB.
 - **Given** a cookie is not in the DB, **then** it is marked "Unclassified" and flagged for review.
 - **Given** each cookie, **then** name, provider, purpose, expiry, type (HTTP/script), and source domain are recorded where determinable.
+- **Given** the cookie matches the Open Cookie Database, **then** GDPR metadata — retention, data controller, and GDPR rights portal URL — is recorded alongside it.
 
 ---
 
@@ -40,7 +41,7 @@ Module ref: spec §4.3
 
 ### Acceptance Criteria
 - **Given** a cookie (classified or unclassified), **when** I change its category and save, **then** the override persists across future scans.
-- **Given** I set purpose/provider text, **then** it appears in the cookie declaration.
+- **Given** I set purpose/provider text or GDPR metadata (retention, data controller, GDPR portal URL), **then** it appears in the cookie declaration and the consent banner's cookie-details view.
 - **Given** an overridden cookie reappears in a later scan, **then** my override is retained, not reset by auto-classification.
 
 ---

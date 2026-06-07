@@ -72,6 +72,9 @@ erDiagram
         string provider
         enum category "necessary|preferences|statistics|marketing|unclassified"
         text purpose
+        string retention "GDPR; e.g. 1 year"
+        string data_controller "GDPR"
+        string gdpr_portal_url "GDPR rights portal"
         string expiry "e.g. 1 year|session"
         enum type "http|script|local_storage|session_storage|pixel"
         string source_domain
@@ -88,6 +91,9 @@ erDiagram
         enum category
         string provider
         text purpose
+        string retention "GDPR override"
+        string data_controller "GDPR override"
+        string gdpr_portal_url "GDPR override"
     }
     BANNER_CONFIGS {
         bigint id PK
@@ -204,6 +210,9 @@ Schema::create('cookies', function (Blueprint $table) {
     $table->enum('category', ['necessary', 'preferences', 'statistics', 'marketing', 'unclassified'])
           ->default('unclassified');
     $table->text('purpose')->nullable();
+    $table->string('retention')->nullable();        // GDPR: storage duration
+    $table->string('data_controller')->nullable();  // GDPR: controller
+    $table->string('gdpr_portal_url', 2048)->nullable(); // GDPR: rights portal
     $table->string('expiry')->nullable();           // "1 year" | "session"
     $table->enum('type', ['http', 'script', 'local_storage', 'session_storage', 'pixel']);
     $table->string('source_domain')->nullable();
@@ -228,6 +237,9 @@ Schema::create('cookie_overrides', function (Blueprint $table) {
     $table->enum('category', ['necessary', 'preferences', 'statistics', 'marketing']);
     $table->string('provider')->nullable();
     $table->text('purpose')->nullable();
+    $table->string('retention')->nullable();         // GDPR override
+    $table->string('data_controller')->nullable();   // GDPR override
+    $table->string('gdpr_portal_url', 2048)->nullable(); // GDPR override
     $table->timestamps();
     $table->unique(['domain_id', 'cookie_name', 'source_domain']);
 });
@@ -367,6 +379,11 @@ public function up(): void
 
 ## 4. Notes & Open Items
 
+- **GDPR metadata (Jun 2026):** `retention`, `data_controller`, `gdpr_portal_url`
+  added to `cookies`, `cookie_overrides`, and the `cookie_classifications` seed
+  table (migrations `2026_06_06_000001`/`000002`). `cookie_classifications` is the
+  in-house DB populated by `cookies:import-ocd`; `CookieClassifier` reads it (and
+  override rows) to fill these fields on each scan.
 - `users` table unchanged at launch; team/multi-user (v2) will add a pivot
   (`domain_user` with role) — out of scope now.
 - Free-tier 1-domain cap enforced in app (Domain create policy), not schema.

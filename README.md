@@ -20,8 +20,10 @@ scripts, and keep an auditable log of every choice — built **GDPR-first**
   dependency-free HTTP crawler, or a headless Chromium crawler that executes JS
   and captures client-side cookies (see [Cookie Scanning](#cookie-scanning)).
 - **Cookie classification** — cookies auto-classified from an in-house database
-  seeded from the public [Open Cookie Database](https://github.com/jkwakman/Open-Cookie-Database),
-  with per-domain overrides.
+  seeded from the public [Open Cookie Database](https://github.com/jkwakman/Open-Cookie-Database)
+  via `php artisan cookies:import-ocd`. Classification carries GDPR metadata
+  (provider, purpose, **retention**, **data controller**, **GDPR rights portal
+  URL**) and supports per-domain overrides for every field.
 - **Banner builder** — configure layout, theme, colors, and multi-language
   content for the consent banner; preview and publish versioned banners.
 - **Consent SDK** (`resources/sdk/cmp.ts`) — a standalone, framework-free script
@@ -44,7 +46,7 @@ scripts, and keep an auditable log of every choice — built **GDPR-first**
 
 | Layer      | Tech |
 |------------|------|
-| Backend    | PHP 8.3, Laravel 13, Inertia (server adapter) |
+| Backend    | PHP 8.4, Laravel 13, Inertia (server adapter) |
 | Frontend   | React 19 + TypeScript, Inertia, Tailwind CSS v4, Radix UI, lucide-react |
 | Consent SDK| Vanilla TypeScript, bundled with Vite (no framework) |
 | Auth       | Laravel Fortify + `@laravel/passkeys` |
@@ -71,7 +73,7 @@ Endpoints consumed by the SDK on customer sites (prefix `/v1/c`):
 
 ### Prerequisites
 
-- PHP **8.3+** and Composer
+- PHP **8.4+** and Composer (locked deps pull Symfony 8.1, which requires PHP ≥ 8.4.1)
 - Node.js **20+** and npm
 
 ### Install
@@ -96,6 +98,9 @@ php artisan migrate
 
 # Seed baseline data (cookie classifications, demo records)
 php artisan db:seed
+
+# Import the Open Cookie Database (classifications + GDPR metadata)
+php artisan cookies:import-ocd
 ```
 
 ### Run (development)
@@ -163,6 +168,38 @@ shells out to [`scanner/crawl.mjs`](scanner/crawl.mjs) and parses its JSON. If
 the crawl process fails (e.g. Chromium missing), the scan is marked **failed**
 with a clear error rather than silently returning partial data. The queue worker
 (`php artisan queue:work`) must run on a host where Node + Chromium are available.
+
+### Scheduled scans
+
+Recurring scans (US-SCAN-5) are dispatched by the Laravel scheduler
+([`routes/console.php`](routes/console.php)):
+
+```php
+Schedule::command('scans:dispatch-scheduled --frequency=weekly')->weekly();
+Schedule::command('scans:dispatch-scheduled --frequency=monthly')->monthly();
+```
+
+`scans:dispatch-scheduled` queues a scan for every verified domain with
+scheduled scanning enabled at the matching cadence. Run `php artisan schedule:work`
+(dev) or a cron entry hitting `schedule:run` (prod) plus a `queue:work` worker.
+
+## Cookie Classification Database
+
+Classifications come from the [Open Cookie Database](https://github.com/jkwakman/Open-Cookie-Database),
+imported into the local `cookie_classifications` table:
+
+```bash
+php artisan cookies:import-ocd                 # fetch upstream CSV
+php artisan cookies:import-ocd --url=<csv-url>  # alternate source
+php artisan cookies:import-ocd --path=<file>    # local CSV
+```
+
+Each entry maps a cookie name/provider to a category plus GDPR metadata —
+**purpose**, **retention**, **data controller**, and **GDPR rights portal URL**.
+`RunScanJob` applies these via [`CookieClassifier`](app/Services/Scanner/CookieClassifier.php),
+falling back to per-domain owner overrides where set. The fields surface in the
+consent banner's cookie-details modal and the cookie declaration. Re-run the
+import periodically (or schedule it) to keep classifications current.
 
 ## Embedding the SDK on a Site
 

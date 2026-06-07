@@ -14,6 +14,9 @@ Route::inertia('/', 'welcome')->name('home');
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Setup & compliance guide (replaces the starter-kit docs link).
+    Route::inertia('guide', 'guide')->name('guide');
+
     Route::get('domains', [DomainController::class, 'index'])->name('domains.index');
     Route::get('domains/create', [DomainController::class, 'create'])->name('domains.create');
     Route::post('domains', [DomainController::class, 'store'])->name('domains.store');

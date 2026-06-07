@@ -95,7 +95,8 @@ GDPR/ePrivacy demands the platform must satisfy:
 - Detects cookies, localStorage, sessionStorage, trackers, third-party requests.
 - Auto-classifies into Necessary / Preferences / Statistics / Marketing using a
   known-cookie database; manual override.
-- Per cookie: name, provider, purpose, expiry, type (HTTP/script), domain.
+- Per cookie: name, provider, purpose, expiry, type (HTTP/script), domain, and
+  GDPR metadata (retention, data controller, GDPR rights portal URL) where known.
 - Flags new/unclassified cookies between scans.
 - Crawl limited to 100 pages per domain (free-tier cap).
 - Classification uses in-house cookie DB, seeded from Open Cookie Database, curated
@@ -177,7 +178,7 @@ GDPR/ePrivacy demands the platform must satisfy:
 - **Domain**(id, user_id, hostname, verify_status, created_at)
 - **Scan**(id, domain_id, started_at, status, pages_crawled)
 - **Cookie**(id, domain_id, name, provider, category, purpose, expiry, source,
-  first_seen, last_seen)
+  retention, data_controller, gdpr_portal_url, first_seen, last_seen)
 - **BannerConfig**(id, domain_id, version, layout, theme, languages, content_json,
   published_at)
 - **ConsentRecord**(id, domain_id, consent_id, timestamp, categories_json,
@@ -215,5 +216,8 @@ GDPR/ePrivacy demands the platform must satisfy:
 ### Remaining to define later
 - Paid-tier structure (when free limits exceeded).
 - WCAG conformance target level (A / AA).
-- Scanner engine choice (headless browser vs. crawler).
 - Pageview metering enforcement (soft warn vs. hard block at 50k).
+
+### Decided since v0.1
+- Scanner engine: dual driver — dependency-free `http` crawler (default) and
+  headless-Chromium `playwright` driver, selected via `SCANNER_DRIVER`.

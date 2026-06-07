@@ -14,7 +14,7 @@ Decisions inherit the launch constraints in functional-spec §1 / §8.
 
 | Layer | Choice |
 |-------|--------|
-| Backend framework | Laravel 13, PHP 8.3 |
+| Backend framework | Laravel 13, PHP 8.4 (min ≥ 8.4.1 — locked Symfony 8.1; CI matrix 8.4 + 8.5) |
 | Auth | Laravel Fortify + `@laravel/passkeys` (WebAuthn) |
 | Dashboard UI | Inertia 3 + React 19 (React Compiler) + TypeScript |
 | UI kit | Radix / shadcn, Tailwind 4, Sonner (toasts), Lucide icons |
@@ -130,13 +130,21 @@ Cloud provider: **Microsoft Azure**. All resources provisioned in EU regions.
 - Versioned (`/sdk/v1/`); breaking changes ship under new major path.
 
 ### 4.4 Scanner service
-- Triggered by queue job (on-demand US-SCAN-1, scheduled US-SCAN-5).
-- Playwright headless Chromium: load up to 100 pages/domain, capture
-  `document.cookie`, storage, and network (3rd-party hosts).
-- Classifies against in-house cookie DB (seeded Open Cookie Database); unmatched →
-  "Unclassified".
-- Persists `Scan` + `Cookie` rows; computes diff vs prior scan (US-SCAN-4);
-  triggers notification job on new/unclassified.
+- Triggered by queue job (on-demand US-SCAN-1, scheduled US-SCAN-5 via
+  `scans:dispatch-scheduled` in `routes/console.php`).
+- Two drivers selected by `SCANNER_DRIVER`:
+  - `http` (default, dependency-free): parses `Set-Cookie` headers + 3rd-party
+    `<script src>` hosts only.
+  - `playwright` (headless Chromium): runs `scanner/crawl.mjs`, loads up to 100
+    pages/domain, captures `document.cookie`, `localStorage`/`sessionStorage`,
+    and network 3rd-party hosts — the only driver that sees JS-set cookies
+    (`_ga`, `_fbp`, …). Crawl failure marks the scan **failed** (no partial data).
+- Classifies against in-house cookie DB (`cookie_classifications`, seeded from the
+  Open Cookie Database via `cookies:import-ocd`); unmatched → "Unclassified".
+- `CookieClassifier` resolves category + GDPR metadata (purpose, retention, data
+  controller, GDPR portal URL), with per-domain overrides taking precedence.
+- Persists `Scan` + `Cookie` rows (incl. GDPR metadata); computes diff vs prior
+  scan (US-SCAN-4); triggers notification job on new/unclassified.
 
 ### 4.5 Background jobs
 - `RunScanJob`, `ClassifyCookiesJob`, `DetectChangesJob`, `SendCookieAlertJob`,
@@ -149,8 +157,13 @@ Cloud provider: **Microsoft Azure**. All resources provisioned in EU regions.
 ### 5.1 Core tables (Postgres)
 Mirrors functional-spec §6:
 `users`, `domains`, `domain_verifications`, `scans`, `cookies`,
-`cookie_overrides`, `banner_configs` (versioned), `policy_versions`,
-`consent_records`, `notification_settings`.
+`cookie_overrides`, `cookie_classifications` (OCD seed/import),
+`banner_configs` (versioned), `policy_versions`, `consent_records`,
+`notification_settings`.
+
+`cookies`, `cookie_overrides`, and `cookie_classifications` each carry GDPR
+metadata columns — `retention`, `data_controller`, `gdpr_portal_url` — added by
+the Jun 2026 migrations (see [data-model.md](data-model.md) §2.4–2.5).
 
 ### 5.2 Key relationships
 - `users 1─N domains` (free tier enforces max 1 active domain).

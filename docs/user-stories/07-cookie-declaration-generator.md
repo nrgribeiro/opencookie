@@ -11,7 +11,7 @@ Module ref: spec §4.7
 **So that** my disclosures are accurate without manual effort.
 
 ### Acceptance Criteria
-- **Given** a completed scan, **then** a declaration table is generated grouping cookies by category with name, provider, purpose, and expiry.
+- **Given** a completed scan, **then** a declaration table is generated grouping cookies by category with name, provider, purpose, expiry, and GDPR metadata (retention, data controller, GDPR rights portal URL) where available.
 - **Given** classification overrides exist, **then** the declaration reflects the overridden values.
 - **Given** a new scan changes the cookie set, **then** the declaration updates to stay in sync.
 
