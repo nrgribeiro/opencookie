@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             RolesSeeder::class,
+            TiersSeeder::class,
             CmpSeeder::class,
         ]);
     }

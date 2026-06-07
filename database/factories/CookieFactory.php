@@ -5,11 +5,12 @@ namespace Database\Factories;
 use App\Enums\CookieCategory;
 use App\Enums\CookieStatus;
 use App\Enums\CookieType;
+use App\Models\Cookie;
 use App\Models\Domain;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Cookie>
+ * @extends Factory<Cookie>
  */
 class CookieFactory extends Factory
 {

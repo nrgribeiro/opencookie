@@ -22,8 +22,8 @@ class RunScanJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /** Free-tier crawl cap (functional-spec §8). */
-    public const PAGE_LIMIT = 100;
+    /** Fallback crawl cap when the owner's tier defines none. */
+    public const DEFAULT_PAGE_LIMIT = 100;
 
     /**
      * Wall-clock cap for the job. Must exceed the scanner process timeout
@@ -37,8 +37,9 @@ class RunScanJob implements ShouldQueue
 
     public function handle(SiteScanner $scanner, CookieClassifier $classifier): void
     {
-        $scan = Scan::with('domain')->findOrFail($this->scanId);
+        $scan = Scan::with('domain.user')->findOrFail($this->scanId);
         $domain = $scan->domain;
+        $pageLimit = $domain->user?->resolveTier()->max_scan_pages ?? self::DEFAULT_PAGE_LIMIT;
 
         $scan->update([
             'status' => ScanStatus::Running,
@@ -47,7 +48,7 @@ class RunScanJob implements ShouldQueue
         ]);
 
         try {
-            $result = $scanner->scan($domain, self::PAGE_LIMIT);
+            $result = $scanner->scan($domain, $pageLimit);
 
             $overrides = $domain->cookieOverrides()->get()
                 ->keyBy(fn (CookieOverride $o) => $o->cookie_name.'|'.($o->source_domain ?? ''));

@@ -7,9 +7,6 @@ use Illuminate\Validation\Validator;
 
 class StoreDomainRequest extends FormRequest
 {
-    /** Free-tier cap (functional-spec §8): 1 domain per account. */
-    private const FREE_TIER_DOMAIN_LIMIT = 1;
-
     public function authorize(): bool
     {
         return $this->user() !== null;
@@ -54,15 +51,20 @@ class StoreDomainRequest extends FormRequest
     }
 
     /**
-     * Enforce the free-tier domain cap.
+     * Enforce the tier domain cap (US-ADMIN-5). A null max means unlimited.
      */
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            if ($this->user()->domains()->count() >= self::FREE_TIER_DOMAIN_LIMIT) {
+            $tier = $this->user()->resolveTier();
+            $max = $tier->max_domains;
+
+            if ($max !== null && $this->user()->domains()->count() >= $max) {
                 $validator->errors()->add(
                     'hostname',
-                    'Free tier allows 1 domain. Remove the existing domain to add another.',
+                    $max === 1
+                        ? sprintf('The %s tier allows 1 domain. Remove the existing domain to add another.', $tier->name)
+                        : sprintf('The %s tier allows up to %d domains. Remove one to add another.', $tier->name, $max),
                 );
             }
         });

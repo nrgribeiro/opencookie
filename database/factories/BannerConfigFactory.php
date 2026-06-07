@@ -3,11 +3,12 @@
 namespace Database\Factories;
 
 use App\Enums\BannerStatus;
+use App\Models\BannerConfig;
 use App\Models\Domain;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\BannerConfig>
+ * @extends Factory<BannerConfig>
  */
 class BannerConfigFactory extends Factory
 {

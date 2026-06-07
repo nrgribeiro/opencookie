@@ -3,11 +3,12 @@
 namespace Database\Factories;
 
 use App\Enums\CookieCategory;
+use App\Models\CookieOverride;
 use App\Models\Domain;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\CookieOverride>
+ * @extends Factory<CookieOverride>
  */
 class CookieOverrideFactory extends Factory
 {

@@ -5,10 +5,11 @@ namespace Database\Factories;
 use App\Enums\ScanStatus;
 use App\Enums\ScanTrigger;
 use App\Models\Domain;
+use App\Models\Scan;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Scan>
+ * @extends Factory<Scan>
  */
 class ScanFactory extends Factory
 {

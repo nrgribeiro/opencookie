@@ -4,11 +4,12 @@ namespace Database\Factories;
 
 use App\Enums\VerificationMethod;
 use App\Models\Domain;
+use App\Models\DomainVerification;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\DomainVerification>
+ * @extends Factory<DomainVerification>
  */
 class DomainVerificationFactory extends Factory
 {

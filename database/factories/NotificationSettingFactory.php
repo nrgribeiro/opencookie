@@ -3,10 +3,11 @@
 namespace Database\Factories;
 
 use App\Models\Domain;
+use App\Models\NotificationSetting;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\NotificationSetting>
+ * @extends Factory<NotificationSetting>
  */
 class NotificationSettingFactory extends Factory
 {
