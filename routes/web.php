@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\TierController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\BannerController;
 use App\Http\Controllers\ConsentLogController;
 use App\Http\Controllers\CookieController;
@@ -40,5 +43,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('domains/{domain}/settings', [DomainSettingsController::class, 'update'])->name('domain-settings.update');
     Route::post('domains/{domain}/policy-versions', [DomainSettingsController::class, 'bumpPolicy'])->name('policy-versions.store');
 });
+
+// US-ADMIN-1..5 — super-admin-only platform administration.
+Route::middleware(['auth', 'verified', 'role:super_admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('users', [UserController::class, 'index'])->name('users.index');
+        Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+        Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+
+        Route::get('tiers', [TierController::class, 'index'])->name('tiers.index');
+        Route::post('tiers', [TierController::class, 'store'])->name('tiers.store');
+        Route::put('tiers/{tier}', [TierController::class, 'update'])->name('tiers.update');
+        Route::delete('tiers/{tier}', [TierController::class, 'destroy'])->name('tiers.destroy');
+    });
 
 require __DIR__.'/settings.php';

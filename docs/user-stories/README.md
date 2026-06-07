@@ -14,6 +14,7 @@ User stories + acceptance criteria per module. Derived from
 | 07 | Cookie Declaration / Policy Generator | [07-cookie-declaration-generator.md](07-cookie-declaration-generator.md) | §4.7 |
 | 08 | Dashboard & Analytics | [08-dashboard-analytics.md](08-dashboard-analytics.md) | §4.8 |
 | 09 | Settings | [09-settings.md](09-settings.md) | §4.9 |
+| 10 | Platform Administration | [10-platform-administration.md](10-platform-administration.md) | §4.10 |
 
 ## Story ID prefixes
 - AUTH — Account & Authentication
@@ -25,3 +26,4 @@ User stories + acceptance criteria per module. Derived from
 - DECL — Cookie Declaration
 - DASH — Dashboard & Analytics
 - SET — Settings
+- ADMIN — Platform Administration

@@ -1,5 +1,7 @@
 <?php
 
+use Database\Seeders\RolesSeeder;
+use Database\Seeders\TiersSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -16,6 +18,14 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    ->beforeEach(function () {
+        // Roles + default tiers are platform invariants the app relies on
+        // (super_admin role, default tier for resolveTier()).
+        $this->seed([
+            RolesSeeder::class,
+            TiersSeeder::class,
+        ]);
+    })
     ->in('Feature');
 
 /*

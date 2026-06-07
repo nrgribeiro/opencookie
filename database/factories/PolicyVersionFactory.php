@@ -3,10 +3,11 @@
 namespace Database\Factories;
 
 use App\Models\Domain;
+use App\Models\PolicyVersion;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\PolicyVersion>
+ * @extends Factory<PolicyVersion>
  */
 class PolicyVersionFactory extends Factory
 {

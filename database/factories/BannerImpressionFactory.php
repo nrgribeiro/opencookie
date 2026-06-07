@@ -2,11 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\BannerImpression;
 use App\Models\Domain;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\BannerImpression>
+ * @extends Factory<BannerImpression>
  */
 class BannerImpressionFactory extends Factory
 {

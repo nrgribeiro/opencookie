@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Enums\Role;
 use App\Services\Scanner\HttpSiteScanner;
 use App\Services\Scanner\PlaywrightSiteScanner;
 use App\Services\Scanner\SiteScanner;
@@ -12,6 +13,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -36,6 +38,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureRateLimiters();
+
+        // Super admins bypass per-owner policies (admin area, US-ADMIN-*).
+        Gate::before(fn ($user) => $user->hasRole(Role::SuperAdmin->value) ? true : null);
     }
 
     /**

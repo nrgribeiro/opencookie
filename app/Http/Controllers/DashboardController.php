@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\BannerStatus;
 use App\Enums\ConsentMethod;
 use App\Enums\CookieCategory;
 use App\Models\ConsentRecord;
 use App\Models\Domain;
+use App\Services\DomainCompliance;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -19,13 +19,15 @@ use Inertia\Response;
  */
 class DashboardController extends Controller
 {
-    private const SCAN_FRESH_DAYS = 60;
     private const RECENT_RECORDS = 10;
+
     private const ALLOWED_RANGES = [7, 30, 90];
+
     private const DEFAULT_RANGE = 30;
+
     private const NON_NECESSARY = ['preferences', 'statistics', 'marketing'];
 
-    public function index(Request $request): Response
+    public function index(Request $request, DomainCompliance $compliance): Response
     {
         $domain = $request->user()->domains()
             ->with(['publishedBanner', 'notificationSetting'])
@@ -58,7 +60,7 @@ class DashboardController extends Controller
             'rangeOptions' => self::ALLOWED_RANGES,
             'metrics' => $this->consentMetrics($domain, $from),
             'scanSummary' => $this->scanSummary($domain),
-            'health' => $this->health($domain),
+            'health' => $compliance->checklist($domain),
             'recent' => $this->recent($domain),
         ]);
     }
@@ -137,68 +139,6 @@ class DashboardController extends Controller
             ])->all(),
             'total' => array_sum($rows),
             'unclassified' => (int) ($rows[CookieCategory::Unclassified->value] ?? 0),
-        ];
-    }
-
-    /**
-     * US-DASH-3 — pass/fail checklist.
-     *
-     * @return array<int, array{key: string, label: string, ok: bool, hint: string|null}>
-     */
-    private function health(Domain $domain): array
-    {
-        $banner = $domain->publishedBanner;
-        $hasReject = false;
-        $hasPolicy = false;
-
-        if ($banner) {
-            $content = is_array($banner->content) ? $banner->content : [];
-            $hasReject = collect($content)->contains(
-                fn ($lang) => is_array($lang) && ! empty($lang['rejectAll']),
-            );
-            $hasPolicy = ! empty($banner->policy_url);
-        }
-
-        $recentScan = $domain->last_scanned_at
-            && $domain->last_scanned_at->greaterThan(CarbonImmutable::now()->subDays(self::SCAN_FRESH_DAYS));
-
-        $unclassified = $domain->cookies()
-            ->where('category', CookieCategory::Unclassified)
-            ->count();
-
-        return [
-            [
-                'key' => 'banner_live',
-                'label' => 'Banner is live',
-                'ok' => (bool) $domain->banner_live && $banner?->status === BannerStatus::Published,
-                'hint' => $domain->banner_live ? null : 'Publish your banner from the builder.',
-            ],
-            [
-                'key' => 'reject_button',
-                'label' => 'Reject button present',
-                'ok' => $hasReject,
-                'hint' => $hasReject ? null : 'Add an equal-prominence Reject button in the banner.',
-            ],
-            [
-                'key' => 'policy_linked',
-                'label' => 'Privacy/cookie policy linked',
-                'ok' => $hasPolicy,
-                'hint' => $hasPolicy ? null : 'Set a policy URL in the banner builder.',
-            ],
-            [
-                'key' => 'scan_recent',
-                'label' => sprintf('Scan within %d days', self::SCAN_FRESH_DAYS),
-                'ok' => $recentScan,
-                'hint' => $recentScan ? null : 'Run a fresh scan to keep disclosures current.',
-            ],
-            [
-                'key' => 'no_unclassified',
-                'label' => 'No unclassified cookies',
-                'ok' => $unclassified === 0,
-                'hint' => $unclassified === 0
-                    ? null
-                    : sprintf('%d cookie(s) need a category.', $unclassified),
-            ],
         ];
     }
 

@@ -3,12 +3,13 @@
 namespace Database\Factories;
 
 use App\Enums\ConsentMethod;
+use App\Models\ConsentRecord;
 use App\Models\Domain;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ConsentRecord>
+ * @extends Factory<ConsentRecord>
  */
 class ConsentRecordFactory extends Factory
 {

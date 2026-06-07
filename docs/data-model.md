@@ -14,6 +14,7 @@ recreated.
 
 ```mermaid
 erDiagram
+    TIERS ||--o{ USERS : assigns
     USERS ||--o{ DOMAINS : owns
     DOMAINS ||--o{ DOMAIN_VERIFICATIONS : has
     DOMAINS ||--o{ SCANS : has
@@ -28,10 +29,21 @@ erDiagram
 
     USERS {
         bigint id PK
+        bigint tier_id FK "nullable; default tier if null"
         string name
         string email UK
         timestamp email_verified_at
         string password
+    }
+    TIERS {
+        bigint id PK
+        string name
+        string slug UK
+        int max_domains "nullable = unlimited"
+        int max_scan_pages "default 100"
+        int monthly_pageview_cap "nullable = unlimited"
+        bool scheduled_scans_allowed
+        bool is_default "exactly one true"
     }
     DOMAINS {
         bigint id PK
@@ -149,7 +161,33 @@ erDiagram
 
 ## 2. Migration Sketches (Laravel Schema)
 
-Ordering respects FKs: users → domains → children → consent_records (raw SQL).
+Ordering respects FKs: tiers → users (alter) → domains → children →
+consent_records (raw SQL). Roles use the published `spatie/laravel-permission`
+migration (`roles`, `permissions`, `model_has_roles`, …) — not sketched here.
+
+### 2.0 `tiers` + `users.tier_id`
+```php
+Schema::create('tiers', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->string('slug')->unique();
+    $table->unsignedSmallInteger('max_domains')->nullable();      // null = unlimited
+    $table->unsignedInteger('max_scan_pages')->default(100);
+    $table->unsignedBigInteger('monthly_pageview_cap')->nullable(); // null = unlimited
+    $table->boolean('scheduled_scans_allowed')->default(false);
+    $table->boolean('is_default')->default(false);                // exactly one true
+    $table->timestamps();
+});
+
+Schema::table('users', function (Blueprint $table) {
+    $table->foreignId('tier_id')->nullable()->after('id')->constrained()->nullOnDelete();
+});
+```
+> Seeded with **Free** (`max_domains=1`, `max_scan_pages=100`,
+> `monthly_pageview_cap=50000`, `scheduled_scans_allowed=false`, `is_default=true`)
+> plus optional Pro/Enterprise. A user with `tier_id = null` resolves to the
+> default tier. The `super_admin` role is created + assigned by the same seeder
+> (and the `user:make-admin` command).
 
 ### 2.1 `domains`
 ```php
@@ -384,9 +422,12 @@ public function up(): void
   table (migrations `2026_06_06_000001`/`000002`). `cookie_classifications` is the
   in-house DB populated by `cookies:import-ocd`; `CookieClassifier` reads it (and
   override rows) to fill these fields on each scan.
-- `users` table unchanged at launch; team/multi-user (v2) will add a pivot
+- `users` gains `tier_id` (FK → `tiers`, nullable = default tier) + a `super_admin`
+  role via `spatie/laravel-permission`. Team/multi-user (v2) will add a pivot
   (`domain_user` with role) — out of scope now.
-- Free-tier 1-domain cap enforced in app (Domain create policy), not schema.
+- Domain cap + scanner page cap enforced in app from the user's **tier**
+  (Free = 1 domain), replacing the former hard-coded free-tier constants. Not a
+  schema constraint.
 - `cookies.status` (`new`/`not_seen`) drives change detection (US-SCAN-4); set by
   the scan-diff step.
 - Consider GIN index on `consent_records.categories` only if category-level queries
