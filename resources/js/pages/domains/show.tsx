@@ -3,21 +3,12 @@ import { useState } from 'react';
 import CookieController from '@/actions/App/Http/Controllers/CookieController';
 import DomainController from '@/actions/App/Http/Controllers/DomainController';
 import ScanController from '@/actions/App/Http/Controllers/ScanController';
-import { edit as bannerEdit } from '@/routes/banner';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
 import {
     Dialog,
     DialogClose,
@@ -27,8 +18,17 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
+import { edit as bannerEdit } from '@/routes/banner';
 import { index } from '@/routes/domains';
 import type { BreadcrumbItem } from '@/types';
 
@@ -60,7 +60,12 @@ interface CookieRow {
     status: string;
 }
 
-const CATEGORIES = ['necessary', 'preferences', 'statistics', 'marketing'] as const;
+const CATEGORIES = [
+    'necessary',
+    'preferences',
+    'statistics',
+    'marketing',
+] as const;
 
 function TranslationDialog({
     cookie,
@@ -100,7 +105,7 @@ function TranslationDialog({
                 <div className="space-y-3 py-2">
                     {languages.map((lang) => (
                         <div key={lang} className="grid gap-1">
-                            <span className="text-xs font-medium uppercase text-muted-foreground">
+                            <span className="text-xs font-medium text-muted-foreground uppercase">
                                 {lang}
                             </span>
                             <input
@@ -109,7 +114,10 @@ function TranslationDialog({
                                 value={values[lang] ?? ''}
                                 maxLength={1000}
                                 onChange={(e) =>
-                                    setValues((prev) => ({ ...prev, [lang]: e.target.value }))
+                                    setValues((prev) => ({
+                                        ...prev,
+                                        [lang]: e.target.value,
+                                    }))
                                 }
                             />
                         </div>
@@ -153,8 +161,8 @@ function ProviderUrlDialog({
             <DialogContent>
                 <DialogTitle>Provider URL — {cookie.name}</DialogTitle>
                 <DialogDescription>
-                    Shown in the banner&apos;s details modal. Visitors can follow it to
-                    the third-party provider&apos;s policy page.
+                    Shown in the banner&apos;s details modal. Visitors can
+                    follow it to the third-party provider&apos;s policy page.
                 </DialogDescription>
                 <div className="grid gap-2 py-2">
                     <Label htmlFor={`provurl-${cookie.id}`}>URL</Label>
@@ -212,10 +220,15 @@ function GdprDetailsDialog({
 }) {
     const [open, setOpen] = useState(false);
     const [retention, setRetention] = useState(cookie.retention ?? '');
-    const [dataController, setDataController] = useState(cookie.dataController ?? '');
-    const [gdprPortalUrl, setGdprPortalUrl] = useState(cookie.gdprPortalUrl ?? '');
+    const [dataController, setDataController] = useState(
+        cookie.dataController ?? '',
+    );
+    const [gdprPortalUrl, setGdprPortalUrl] = useState(
+        cookie.gdprPortalUrl ?? '',
+    );
 
-    const hasAny = cookie.retention || cookie.dataController || cookie.gdprPortalUrl;
+    const hasAny =
+        cookie.retention || cookie.dataController || cookie.gdprPortalUrl;
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -232,7 +245,9 @@ function GdprDetailsDialog({
                 </DialogDescription>
                 <div className="grid gap-3 py-2">
                     <div className="grid gap-1">
-                        <Label htmlFor={`ret-${cookie.id}`}>Retention period</Label>
+                        <Label htmlFor={`ret-${cookie.id}`}>
+                            Retention period
+                        </Label>
                         <input
                             id={`ret-${cookie.id}`}
                             type="text"
@@ -244,7 +259,9 @@ function GdprDetailsDialog({
                         />
                     </div>
                     <div className="grid gap-1">
-                        <Label htmlFor={`ctrl-${cookie.id}`}>Data controller</Label>
+                        <Label htmlFor={`ctrl-${cookie.id}`}>
+                            Data controller
+                        </Label>
                         <input
                             id={`ctrl-${cookie.id}`}
                             type="text"
@@ -295,6 +312,7 @@ function GdprDetailsDialog({
 
 function CopyButton({ value }: { value: string }) {
     const [copied, setCopied] = useState(false);
+
     return (
         <Button
             type="button"
@@ -338,7 +356,11 @@ export default function DomainsShow({
         error: string | null;
     } | null;
     cookies: CookieRow[];
-    cookieCounts: { total: number; unclassified: number; missingTranslations: number };
+    cookieCounts: {
+        total: number;
+        unclassified: number;
+        missingTranslations: number;
+    };
     languages: string[];
 }) {
     const errors = usePage().props.errors as Record<string, string>;
@@ -357,10 +379,14 @@ export default function DomainsShow({
 
     const runScan = () => {
         setScanning(true);
-        router.post(ScanController.store(domain.id).url, {}, {
-            preserveScroll: true,
-            onFinish: () => setScanning(false),
-        });
+        router.post(
+            ScanController.store(domain.id).url,
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => setScanning(false),
+            },
+        );
     };
 
     const setCookieCategory = (cookie: CookieRow, category: string) => {
@@ -379,7 +405,9 @@ export default function DomainsShow({
             CookieController.update(cookie.id).url,
             {
                 category:
-                    cookie.category === 'unclassified' ? 'necessary' : cookie.category,
+                    cookie.category === 'unclassified'
+                        ? 'necessary'
+                        : cookie.category,
                 provider: cookie.provider ?? undefined,
                 providerUrl: cookie.providerUrl ?? undefined,
                 purpose: cookie.purpose ?? undefined,
@@ -394,7 +422,9 @@ export default function DomainsShow({
             CookieController.update(cookie.id).url,
             {
                 category:
-                    cookie.category === 'unclassified' ? 'necessary' : cookie.category,
+                    cookie.category === 'unclassified'
+                        ? 'necessary'
+                        : cookie.category,
                 provider: cookie.provider ?? undefined,
                 providerUrl: url,
                 purpose: cookie.purpose ?? undefined,
@@ -415,7 +445,9 @@ export default function DomainsShow({
             CookieController.update(cookie.id).url,
             {
                 category:
-                    cookie.category === 'unclassified' ? 'necessary' : cookie.category,
+                    cookie.category === 'unclassified'
+                        ? 'necessary'
+                        : cookie.category,
                 provider: cookie.provider ?? undefined,
                 purpose: cookie.purpose ?? undefined,
                 retention: values.retention,
@@ -425,6 +457,15 @@ export default function DomainsShow({
             { preserveScroll: true },
         );
     };
+
+    const statusOrder: Record<string, number> = {
+        new: 0,
+        not_seen: 1,
+        active: 2,
+    };
+    const sortedCookies = [...cookies].sort(
+        (a, b) => (statusOrder[a.status] ?? 2) - (statusOrder[b.status] ?? 2),
+    );
 
     const multiLang = languages.length > 1;
     const breadcrumbs: BreadcrumbItem[] = [
@@ -439,22 +480,39 @@ export default function DomainsShow({
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="flex items-center justify-between">
-                    <Heading title={domain.hostname} description="Domain settings and installation." />
+                    <Heading
+                        title={domain.hostname}
+                        description="Domain settings and installation."
+                    />
                     <div className="flex items-center gap-2">
-                        <Badge variant={domain.verifyStatus === 'verified' ? 'default' : 'secondary'}>
+                        <Badge
+                            variant={
+                                domain.verifyStatus === 'verified'
+                                    ? 'default'
+                                    : 'secondary'
+                            }
+                        >
                             {domain.verifyStatus}
                         </Badge>
-                        <Badge variant={domain.bannerLive ? 'default' : 'outline'}>
+                        <Badge
+                            variant={domain.bannerLive ? 'default' : 'outline'}
+                        >
                             {domain.bannerLive ? 'Banner live' : 'Banner off'}
                         </Badge>
                         <Button asChild size="sm" variant="outline">
-                            <Link href={bannerEdit(domain.id).url}>Edit banner</Link>
+                            <Link href={bannerEdit(domain.id).url}>
+                                Edit banner
+                            </Link>
                         </Button>
                         <Button asChild size="sm" variant="outline">
-                            <Link href={`/domains/${domain.id}/consent-logs`}>Consent logs</Link>
+                            <Link href={`/domains/${domain.id}/consent-logs`}>
+                                Consent logs
+                            </Link>
                         </Button>
                         <Button asChild size="sm" variant="outline">
-                            <Link href={`/domains/${domain.id}/settings`}>Settings</Link>
+                            <Link href={`/domains/${domain.id}/settings`}>
+                                Settings
+                            </Link>
                         </Button>
                     </div>
                 </div>
@@ -462,11 +520,14 @@ export default function DomainsShow({
                 {/* US-DOM-3 — embed snippet */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">Install snippet</CardTitle>
+                        <CardTitle className="text-base">
+                            Install snippet
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                         <p className="text-sm text-muted-foreground">
-                            Paste this as the first script in your site&apos;s <code>&lt;head&gt;</code>.
+                            Paste this as the first script in your site&apos;s{' '}
+                            <code>&lt;head&gt;</code>.
                         </p>
                         <div className="flex items-start gap-2">
                             <pre className="flex-1 overflow-x-auto rounded-md bg-muted p-3 text-xs">
@@ -480,13 +541,17 @@ export default function DomainsShow({
                 {/* US-DECL-2 — cookie declaration embed snippet */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">Cookie declaration embed</CardTitle>
+                        <CardTitle className="text-base">
+                            Cookie declaration embed
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                         <p className="text-sm text-muted-foreground">
-                            Paste into your cookie/privacy policy page. The table renders the
-                            live declaration from your latest scan and updates automatically.
-                            Append <code>?lang=xx</code> to the script URL to force a language.
+                            Paste into your cookie/privacy policy page. The
+                            table renders the live declaration from your latest
+                            scan and updates automatically. Append{' '}
+                            <code>?lang=xx</code> to the script URL to force a
+                            language.
                         </p>
                         <div className="flex items-start gap-2">
                             <pre className="flex-1 overflow-x-auto rounded-md bg-muted p-3 text-xs">
@@ -501,11 +566,15 @@ export default function DomainsShow({
                 {verification && domain.verifyStatus !== 'verified' && (
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-base">Verify ownership</CardTitle>
+                            <CardTitle className="text-base">
+                                Verify ownership
+                            </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid gap-2">
-                                <span className="text-sm font-medium">Verification token</span>
+                                <span className="text-sm font-medium">
+                                    Verification token
+                                </span>
                                 <div className="flex items-start gap-2">
                                     <pre className="flex-1 overflow-x-auto rounded-md bg-muted p-3 text-xs">
                                         <code>{verification.token}</code>
@@ -515,15 +584,26 @@ export default function DomainsShow({
                             </div>
 
                             <div className="grid gap-2">
-                                <span className="text-sm font-medium">Method</span>
-                                <Select value={method} onValueChange={setMethod}>
+                                <span className="text-sm font-medium">
+                                    Method
+                                </span>
+                                <Select
+                                    value={method}
+                                    onValueChange={setMethod}
+                                >
                                     <SelectTrigger className="max-w-xs">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="dns_txt">DNS TXT record</SelectItem>
-                                        <SelectItem value="meta_tag">Meta tag</SelectItem>
-                                        <SelectItem value="file">File upload</SelectItem>
+                                        <SelectItem value="dns_txt">
+                                            DNS TXT record
+                                        </SelectItem>
+                                        <SelectItem value="meta_tag">
+                                            Meta tag
+                                        </SelectItem>
+                                        <SelectItem value="file">
+                                            File upload
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <p className="text-xs text-muted-foreground">
@@ -563,7 +643,9 @@ export default function DomainsShow({
                         <CardTitle className="text-base">Cookie scan</CardTitle>
                         <Button
                             onClick={runScan}
-                            disabled={scanning || domain.verifyStatus !== 'verified'}
+                            disabled={
+                                scanning || domain.verifyStatus !== 'verified'
+                            }
                             size="sm"
                         >
                             {scanning ? 'Starting…' : 'Run scan'}
@@ -578,21 +660,35 @@ export default function DomainsShow({
                         <InputError message={errors.scan} />
                         {latestScan ? (
                             <div className="flex flex-wrap gap-2 text-sm">
-                                <Badge variant={latestScan.status === 'complete' ? 'default' : 'secondary'}>
+                                <Badge
+                                    variant={
+                                        latestScan.status === 'complete'
+                                            ? 'default'
+                                            : 'secondary'
+                                    }
+                                >
                                     {latestScan.status}
                                 </Badge>
-                                <Badge variant="outline">{latestScan.pagesCrawled} pages</Badge>
+                                <Badge variant="outline">
+                                    {latestScan.pagesCrawled} pages
+                                </Badge>
                                 {latestScan.finishedAt && (
                                     <Badge variant="outline">
-                                        {new Date(latestScan.finishedAt).toLocaleString()}
+                                        {new Date(
+                                            latestScan.finishedAt,
+                                        ).toLocaleString()}
                                     </Badge>
                                 )}
                                 {latestScan.error && (
-                                    <span className="text-red-600">{latestScan.error}</span>
+                                    <span className="text-red-600">
+                                        {latestScan.error}
+                                    </span>
                                 )}
                             </div>
                         ) : (
-                            <p className="text-sm text-muted-foreground">No scans yet.</p>
+                            <p className="text-sm text-muted-foreground">
+                                No scans yet.
+                            </p>
                         )}
                     </CardContent>
                 </Card>
@@ -604,13 +700,17 @@ export default function DomainsShow({
                             <CardTitle className="text-base">
                                 Cookies ({cookieCounts.total})
                                 {cookieCounts.unclassified > 0 && (
-                                    <Badge variant="destructive" className="ml-2">
+                                    <Badge
+                                        variant="destructive"
+                                        className="ml-2"
+                                    >
                                         {cookieCounts.unclassified} unclassified
                                     </Badge>
                                 )}
                                 {cookieCounts.missingTranslations > 0 && (
                                     <Badge variant="secondary" className="ml-2">
-                                        {cookieCounts.missingTranslations} missing translation(s)
+                                        {cookieCounts.missingTranslations}{' '}
+                                        missing translation(s)
                                     </Badge>
                                 )}
                             </CardTitle>
@@ -621,43 +721,96 @@ export default function DomainsShow({
                                     <thead>
                                         <tr className="border-b text-left text-muted-foreground">
                                             <th className="py-2 pr-4">Name</th>
-                                            <th className="py-2 pr-4">Source</th>
+                                            <th className="py-2 pr-4">
+                                                Status
+                                            </th>
+                                            <th className="py-2 pr-4">
+                                                Source
+                                            </th>
                                             <th className="py-2 pr-4">Type</th>
-                                            <th className="py-2 pr-4">Expiry</th>
-                                            <th className="py-2 pr-4">Category</th>
-                                            <th className="py-2 pr-4">Provider URL</th>
-                                            {multiLang && <th className="py-2">Translations</th>}
+                                            <th className="py-2 pr-4">
+                                                Expiry
+                                            </th>
+                                            <th className="py-2 pr-4">
+                                                Category
+                                            </th>
+                                            <th className="py-2 pr-4">
+                                                Provider URL
+                                            </th>
+                                            {multiLang && (
+                                                <th className="py-2">
+                                                    Translations
+                                                </th>
+                                            )}
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {cookies.map((cookie) => (
-                                            <tr key={cookie.id} className="border-b last:border-0">
-                                                <td className="py-2 pr-4 font-mono text-xs">{cookie.name}</td>
-                                                <td className="py-2 pr-4 text-muted-foreground">
-                                                    {cookie.isFirstParty ? '1st party' : cookie.sourceDomain}
+                                        {sortedCookies.map((cookie) => (
+                                            <tr
+                                                key={cookie.id}
+                                                className="border-b last:border-0"
+                                            >
+                                                <td className="py-2 pr-4 font-mono text-xs">
+                                                    {cookie.name}
                                                 </td>
-                                                <td className="py-2 pr-4">{cookie.type}</td>
-                                                <td className="py-2 pr-4">{cookie.expiry ?? '—'}</td>
+                                                <td className="py-2 pr-4">
+                                                    {cookie.status ===
+                                                        'new' && (
+                                                        <Badge variant="default">
+                                                            New
+                                                        </Badge>
+                                                    )}
+                                                    {cookie.status ===
+                                                        'not_seen' && (
+                                                        <Badge variant="secondary">
+                                                            Not seen
+                                                        </Badge>
+                                                    )}
+                                                </td>
+                                                <td className="py-2 pr-4 text-muted-foreground">
+                                                    {cookie.isFirstParty
+                                                        ? '1st party'
+                                                        : cookie.sourceDomain}
+                                                </td>
+                                                <td className="py-2 pr-4">
+                                                    {cookie.type}
+                                                </td>
+                                                <td className="py-2 pr-4">
+                                                    {cookie.expiry ?? '—'}
+                                                </td>
                                                 <td className="py-2 pr-4">
                                                     <Select
                                                         value={
-                                                            cookie.category === 'unclassified'
+                                                            cookie.category ===
+                                                            'unclassified'
                                                                 ? undefined
                                                                 : cookie.category
                                                         }
-                                                        onValueChange={(value) =>
-                                                            setCookieCategory(cookie, value)
+                                                        onValueChange={(
+                                                            value,
+                                                        ) =>
+                                                            setCookieCategory(
+                                                                cookie,
+                                                                value,
+                                                            )
                                                         }
                                                     >
                                                         <SelectTrigger className="h-8 w-40">
                                                             <SelectValue placeholder="Unclassified" />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            {CATEGORIES.map((c) => (
-                                                                <SelectItem key={c} value={c}>
-                                                                    {c}
-                                                                </SelectItem>
-                                                            ))}
+                                                            {CATEGORIES.map(
+                                                                (c) => (
+                                                                    <SelectItem
+                                                                        key={c}
+                                                                        value={
+                                                                            c
+                                                                        }
+                                                                    >
+                                                                        {c}
+                                                                    </SelectItem>
+                                                                ),
+                                                            )}
                                                         </SelectContent>
                                                     </Select>
                                                 </td>
@@ -665,11 +818,21 @@ export default function DomainsShow({
                                                     <div className="flex flex-wrap gap-2">
                                                         <ProviderUrlDialog
                                                             cookie={cookie}
-                                                            onSave={(url) => saveProviderUrl(cookie, url)}
+                                                            onSave={(url) =>
+                                                                saveProviderUrl(
+                                                                    cookie,
+                                                                    url,
+                                                                )
+                                                            }
                                                         />
                                                         <GdprDetailsDialog
                                                             cookie={cookie}
-                                                            onSave={(v) => saveGdprDetails(cookie, v)}
+                                                            onSave={(v) =>
+                                                                saveGdprDetails(
+                                                                    cookie,
+                                                                    v,
+                                                                )
+                                                            }
                                                         />
                                                     </div>
                                                 </td>
@@ -677,9 +840,14 @@ export default function DomainsShow({
                                                     <td className="py-2">
                                                         <TranslationDialog
                                                             cookie={cookie}
-                                                            languages={languages}
+                                                            languages={
+                                                                languages
+                                                            }
                                                             onSave={(t) =>
-                                                                saveTranslations(cookie, t)
+                                                                saveTranslations(
+                                                                    cookie,
+                                                                    t,
+                                                                )
                                                             }
                                                         />
                                                     </td>
@@ -702,25 +870,41 @@ export default function DomainsShow({
                     </CardHeader>
                     <CardContent className="space-y-3">
                         <p className="text-sm text-muted-foreground">
-                            Removes banner config and scan data. Consent logs are retained per policy.
+                            Removes banner config and scan data. Consent logs
+                            are retained per policy.
                         </p>
                         <Dialog>
                             <DialogTrigger asChild>
-                                <Button variant="destructive">Delete domain</Button>
+                                <Button variant="destructive">
+                                    Delete domain
+                                </Button>
                             </DialogTrigger>
                             <DialogContent>
-                                <DialogTitle>Delete {domain.hostname}?</DialogTitle>
+                                <DialogTitle>
+                                    Delete {domain.hostname}?
+                                </DialogTitle>
                                 <DialogDescription>
-                                    This removes the domain, its banner config, scans, and cookie records.
-                                    Consent proof logs are kept until the retention period elapses. This cannot be undone.
+                                    This removes the domain, its banner config,
+                                    scans, and cookie records. Consent proof
+                                    logs are kept until the retention period
+                                    elapses. This cannot be undone.
                                 </DialogDescription>
-                                <Form {...DomainController.destroy.form(domain.id)}>
+                                <Form
+                                    {...DomainController.destroy.form(
+                                        domain.id,
+                                    )}
+                                >
                                     {({ processing }) => (
                                         <DialogFooter className="gap-2">
                                             <DialogClose asChild>
-                                                <Button variant="secondary">Cancel</Button>
+                                                <Button variant="secondary">
+                                                    Cancel
+                                                </Button>
                                             </DialogClose>
-                                            <Button variant="destructive" disabled={processing}>
+                                            <Button
+                                                variant="destructive"
+                                                disabled={processing}
+                                            >
                                                 Delete
                                             </Button>
                                         </DialogFooter>

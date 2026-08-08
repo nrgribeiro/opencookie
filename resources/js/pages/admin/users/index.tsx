@@ -7,7 +7,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard as adminDashboard } from '@/routes/admin';
-import { destroy as userDestroy, edit as userEdit, index as usersIndex } from '@/routes/admin/users';
+import {
+    destroy as userDestroy,
+    edit as userEdit,
+    index as usersIndex,
+} from '@/routes/admin/users';
 import type { BreadcrumbItem } from '@/types';
 
 interface UserRow {
@@ -44,11 +48,19 @@ export default function AdminUsers({ users, filters }: Props) {
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        router.get(usersIndex().url, { search }, { preserveState: true, replace: true });
+        router.get(
+            usersIndex().url,
+            { search },
+            { preserveState: true, replace: true },
+        );
     };
 
     const remove = (user: UserRow) => {
-        if (confirm(`Delete ${user.email}? Their domains and data will be removed.`)) {
+        if (
+            confirm(
+                `Delete ${user.email}? Their domains and data will be removed.`,
+            )
+        ) {
             router.delete(userDestroy(user.id).url, { preserveScroll: true });
         }
     };
@@ -58,7 +70,10 @@ export default function AdminUsers({ users, filters }: Props) {
             <Head title="Users" />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
-                <Heading title="Users" description="Manage account tiers and roles." />
+                <Heading
+                    title="Users"
+                    description="Manage account tiers and roles."
+                />
 
                 <form onSubmit={submit} className="flex gap-2">
                     <Input
@@ -77,30 +92,69 @@ export default function AdminUsers({ users, filters }: Props) {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b text-left text-muted-foreground">
-                                    <th className="py-2 pr-4 font-medium">Name</th>
-                                    <th className="py-2 pr-4 font-medium">Email</th>
-                                    <th className="py-2 pr-4 font-medium">Tier</th>
-                                    <th className="py-2 pr-4 font-medium">Role</th>
-                                    <th className="py-2 pr-4 font-medium">Domains</th>
-                                    <th className="py-2 font-medium">Actions</th>
+                                    <th className="py-2 pr-4 font-medium">
+                                        Name
+                                    </th>
+                                    <th className="py-2 pr-4 font-medium">
+                                        Email
+                                    </th>
+                                    <th className="py-2 pr-4 font-medium">
+                                        Tier
+                                    </th>
+                                    <th className="py-2 pr-4 font-medium">
+                                        Role
+                                    </th>
+                                    <th className="py-2 pr-4 font-medium">
+                                        Domains
+                                    </th>
+                                    <th className="py-2 font-medium">
+                                        Actions
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {users.data.map((u) => (
-                                    <tr key={u.id} className="border-b last:border-0">
+                                    <tr
+                                        key={u.id}
+                                        className="border-b last:border-0"
+                                    >
                                         <td className="py-2 pr-4">{u.name}</td>
                                         <td className="py-2 pr-4">{u.email}</td>
-                                        <td className="py-2 pr-4">{u.tier ?? '—'}</td>
                                         <td className="py-2 pr-4">
-                                            {u.isSuperAdmin ? <Badge>Super admin</Badge> : <span className="text-muted-foreground">User</span>}
+                                            {u.tier ?? '—'}
                                         </td>
-                                        <td className="py-2 pr-4">{u.domains}</td>
+                                        <td className="py-2 pr-4">
+                                            {u.isSuperAdmin ? (
+                                                <Badge>Super admin</Badge>
+                                            ) : (
+                                                <span className="text-muted-foreground">
+                                                    User
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="py-2 pr-4">
+                                            {u.domains}
+                                        </td>
                                         <td className="py-2">
                                             <div className="flex gap-2">
-                                                <Button asChild size="sm" variant="outline">
-                                                    <Link href={userEdit(u.id).url}>Edit</Link>
+                                                <Button
+                                                    asChild
+                                                    size="sm"
+                                                    variant="outline"
+                                                >
+                                                    <Link
+                                                        href={
+                                                            userEdit(u.id).url
+                                                        }
+                                                    >
+                                                        Edit
+                                                    </Link>
                                                 </Button>
-                                                <Button size="sm" variant="ghost" onClick={() => remove(u)}>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => remove(u)}
+                                                >
                                                     Delete
                                                 </Button>
                                             </div>
@@ -109,7 +163,10 @@ export default function AdminUsers({ users, filters }: Props) {
                                 ))}
                                 {users.data.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="py-6 text-center text-muted-foreground">
+                                        <td
+                                            colSpan={6}
+                                            className="py-6 text-center text-muted-foreground"
+                                        >
                                             No users found.
                                         </td>
                                     </tr>
@@ -128,7 +185,13 @@ export default function AdminUsers({ users, filters }: Props) {
                                 size="sm"
                                 variant={link.active ? 'default' : 'outline'}
                             >
-                                <Link href={link.url} preserveState dangerouslySetInnerHTML={{ __html: link.label }} />
+                                <Link
+                                    href={link.url}
+                                    preserveState
+                                    dangerouslySetInnerHTML={{
+                                        __html: link.label,
+                                    }}
+                                />
                             </Button>
                         ) : (
                             <Button

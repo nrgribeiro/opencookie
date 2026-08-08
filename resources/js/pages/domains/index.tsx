@@ -29,6 +29,7 @@ function VerifyBadge({ status }: { status: DomainSummary['verifyStatus'] }) {
         failed: { label: 'Failed', variant: 'destructive' as const },
     };
     const { label, variant } = map[status];
+
     return <Badge variant={variant}>{label}</Badge>;
 }
 
@@ -57,10 +58,13 @@ export default function DomainsIndex({
                     <Card>
                         <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
                             <p className="text-muted-foreground">
-                                No domains yet. Add one to start managing consent.
+                                No domains yet. Add one to start managing
+                                consent.
                             </p>
                             <Button asChild>
-                                <Link href={create().url}>Add your first domain</Link>
+                                <Link href={create().url}>
+                                    Add your first domain
+                                </Link>
                             </Button>
                         </CardContent>
                     </Card>
@@ -73,11 +77,21 @@ export default function DomainsIndex({
                                         <CardTitle className="text-base">
                                             {domain.hostname}
                                         </CardTitle>
-                                        <VerifyBadge status={domain.verifyStatus} />
+                                        <VerifyBadge
+                                            status={domain.verifyStatus}
+                                        />
                                     </CardHeader>
                                     <CardContent className="flex gap-2 text-sm text-muted-foreground">
-                                        <Badge variant={domain.bannerLive ? 'default' : 'outline'}>
-                                            {domain.bannerLive ? 'Banner live' : 'Banner off'}
+                                        <Badge
+                                            variant={
+                                                domain.bannerLive
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
+                                        >
+                                            {domain.bannerLive
+                                                ? 'Banner live'
+                                                : 'Banner off'}
                                         </Badge>
                                         <Badge variant="outline">
                                             {domain.lastScannedAt

@@ -48,7 +48,9 @@ export default function DomainSettings({
     currentPolicyVersion: number;
 }) {
     const [expiry, setExpiry] = useState<number>(domain.consentExpiryDays);
-    const [scheduledEnabled, setScheduledEnabled] = useState(domain.scheduledScanEnabled);
+    const [scheduledEnabled, setScheduledEnabled] = useState(
+        domain.scheduledScanEnabled,
+    );
     const [scanFreq, setScanFreq] = useState<'weekly' | 'monthly'>(
         domain.scanFrequency ?? 'monthly',
     );
@@ -83,7 +85,9 @@ export default function DomainSettings({
                             {/* US-SET-1 */}
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-base">Consent expiry</CardTitle>
+                                    <CardTitle className="text-base">
+                                        Consent expiry
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
                                     <div className="grid max-w-xs gap-2">
@@ -98,15 +102,21 @@ export default function DomainSettings({
                                             max={730}
                                             value={expiry}
                                             onChange={(e) =>
-                                                setExpiry(Number(e.target.value) || 0)
+                                                setExpiry(
+                                                    Number(e.target.value) || 0,
+                                                )
                                             }
                                             required
                                         />
-                                        <InputError message={errors.consentExpiryDays} />
+                                        <InputError
+                                            message={errors.consentExpiryDays}
+                                        />
                                         {expiry > GDPR_RECOMMENDED_MAX_DAYS && (
                                             <p className="text-xs text-amber-600">
-                                                GDPR guidance recommends re-prompting within
-                                                12 months ({GDPR_RECOMMENDED_MAX_DAYS} days).
+                                                GDPR guidance recommends
+                                                re-prompting within 12 months (
+                                                {GDPR_RECOMMENDED_MAX_DAYS}{' '}
+                                                days).
                                             </p>
                                         )}
                                     </div>
@@ -116,7 +126,9 @@ export default function DomainSettings({
                             {/* US-SCAN-5 — scheduled scans live on the same form. */}
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-base">Scheduled scans</CardTitle>
+                                    <CardTitle className="text-base">
+                                        Scheduled scans
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
                                     <div className="flex items-center gap-3">
@@ -134,19 +146,29 @@ export default function DomainSettings({
                                     </div>
                                     {scheduledEnabled && (
                                         <div className="grid max-w-xs gap-2">
-                                            <Label htmlFor="scanFrequency">Frequency</Label>
+                                            <Label htmlFor="scanFrequency">
+                                                Frequency
+                                            </Label>
                                             <Select
                                                 value={scanFreq}
                                                 onValueChange={(v) =>
-                                                    setScanFreq(v as 'weekly' | 'monthly')
+                                                    setScanFreq(
+                                                        v as
+                                                            | 'weekly'
+                                                            | 'monthly',
+                                                    )
                                                 }
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="weekly">Weekly</SelectItem>
-                                                    <SelectItem value="monthly">Monthly</SelectItem>
+                                                    <SelectItem value="weekly">
+                                                        Weekly
+                                                    </SelectItem>
+                                                    <SelectItem value="monthly">
+                                                        Monthly
+                                                    </SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <input
@@ -156,14 +178,18 @@ export default function DomainSettings({
                                             />
                                         </div>
                                     )}
-                                    <InputError message={errors.scanFrequency} />
+                                    <InputError
+                                        message={errors.scanFrequency}
+                                    />
                                 </CardContent>
                             </Card>
 
                             {/* US-SET-3 */}
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-base">Notifications</CardTitle>
+                                    <CardTitle className="text-base">
+                                        Notifications
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="flex items-center gap-3">
@@ -171,14 +197,18 @@ export default function DomainSettings({
                                             id="newCookieAlerts"
                                             name="newCookieAlerts"
                                             checked={alerts}
-                                            onCheckedChange={(v) => setAlerts(v === true)}
+                                            onCheckedChange={(v) =>
+                                                setAlerts(v === true)
+                                            }
                                         />
                                         <Label htmlFor="newCookieAlerts">
-                                            Email me when a scan finds new or unclassified
-                                            cookies
+                                            Email me when a scan finds new or
+                                            unclassified cookies
                                         </Label>
                                     </div>
-                                    <InputError message={errors.newCookieAlerts} />
+                                    <InputError
+                                        message={errors.newCookieAlerts}
+                                    />
                                 </CardContent>
                             </Card>
 
@@ -194,7 +224,9 @@ export default function DomainSettings({
                             />
 
                             <div>
-                                <Button disabled={processing}>Save settings</Button>
+                                <Button disabled={processing}>
+                                    Save settings
+                                </Button>
                             </div>
                         </>
                     )}
@@ -212,8 +244,9 @@ export default function DomainSettings({
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <p className="text-sm text-muted-foreground">
-                            Publishing a new version invalidates existing consent records
-                            and re-prompts visitors on next visit.
+                            Publishing a new version invalidates existing
+                            consent records and re-prompts visitors on next
+                            visit.
                         </p>
 
                         <Form
@@ -233,7 +266,9 @@ export default function DomainSettings({
                                             id="notes"
                                             name="notes"
                                             value={notes}
-                                            onChange={(e) => setNotes(e.target.value)}
+                                            onChange={(e) =>
+                                                setNotes(e.target.value)
+                                            }
                                             placeholder="e.g. added analytics vendor X"
                                         />
                                         <InputError message={errors.notes} />
@@ -254,14 +289,20 @@ export default function DomainSettings({
                                             key={v.version}
                                             className="flex flex-wrap items-center gap-2 border-b py-2 last:border-0"
                                         >
-                                            <Badge variant="outline">v{v.version}</Badge>
+                                            <Badge variant="outline">
+                                                v{v.version}
+                                            </Badge>
                                             <span className="text-muted-foreground">
                                                 {v.effectiveAt
-                                                    ? new Date(v.effectiveAt).toLocaleString()
+                                                    ? new Date(
+                                                          v.effectiveAt,
+                                                      ).toLocaleString()
                                                     : '—'}
                                             </span>
                                             {v.notes && (
-                                                <span className="text-xs">{v.notes}</span>
+                                                <span className="text-xs">
+                                                    {v.notes}
+                                                </span>
                                             )}
                                         </li>
                                     ))}
@@ -274,15 +315,19 @@ export default function DomainSettings({
                 {/* US-SET-5 — link out to banner builder. */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">Banner content & languages</CardTitle>
+                        <CardTitle className="text-base">
+                            Banner content & languages
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-sm text-muted-foreground">
-                            Edit banner text, languages, layout, and policy URL in the
-                            banner builder.
+                            Edit banner text, languages, layout, and policy URL
+                            in the banner builder.
                         </p>
                         <Button asChild variant="outline" className="mt-3">
-                            <Link href={`/domains/${domain.id}/banner`}>Open banner builder</Link>
+                            <Link href={`/domains/${domain.id}/banner`}>
+                                Open banner builder
+                            </Link>
                         </Button>
                     </CardContent>
                 </Card>

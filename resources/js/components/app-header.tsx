@@ -127,7 +127,9 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                         {item.icon && (
                                                             <item.icon className="h-5 w-5" />
                                                         )}
-                                                        <span>{item.title}</span>
+                                                        <span>
+                                                            {item.title}
+                                                        </span>
                                                     </a>
                                                 ) : (
                                                     <Link
@@ -138,7 +140,9 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                         {item.icon && (
                                                             <item.icon className="h-5 w-5" />
                                                         )}
-                                                        <span>{item.title}</span>
+                                                        <span>
+                                                            {item.title}
+                                                        </span>
                                                     </Link>
                                                 ),
                                             )}

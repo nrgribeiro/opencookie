@@ -46,15 +46,20 @@ export default function DomainsCreate() {
                                             placeholder="example.com"
                                         />
                                         <p className="text-xs text-muted-foreground">
-                                            Enter the bare domain — no http:// and no path.
+                                            Enter the bare domain — no http://
+                                            and no path.
                                         </p>
                                         <InputError message={errors.hostname} />
                                     </div>
 
                                     <div className="flex items-center gap-3">
-                                        <Button disabled={processing}>Add domain</Button>
+                                        <Button disabled={processing}>
+                                            Add domain
+                                        </Button>
                                         <Button variant="ghost" asChild>
-                                            <Link href={index().url}>Cancel</Link>
+                                            <Link href={index().url}>
+                                                Cancel
+                                            </Link>
                                         </Button>
                                     </div>
                                 </>

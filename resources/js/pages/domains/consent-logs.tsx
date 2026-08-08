@@ -35,9 +35,17 @@ export default function ConsentLogs({
 
     const exportUrl = (() => {
         const params = new URLSearchParams();
-        if (from) params.set('from', from);
-        if (to) params.set('to', to);
+
+        if (from) {
+            params.set('from', from);
+        }
+
+        if (to) {
+            params.set('to', to);
+        }
+
         const q = params.toString();
+
         return `/domains/${domain.id}/consent-logs/export${q ? `?${q}` : ''}`;
     })();
 
@@ -106,19 +114,30 @@ export default function ConsentLogs({
                                     <thead>
                                         <tr className="border-b text-left text-muted-foreground">
                                             <th className="py-2 pr-4">When</th>
-                                            <th className="py-2 pr-4">Method</th>
-                                            <th className="py-2 pr-4">Categories</th>
-                                            <th className="py-2 pr-4">Banner v.</th>
-                                            <th className="py-2 pr-4">Policy v.</th>
+                                            <th className="py-2 pr-4">
+                                                Method
+                                            </th>
+                                            <th className="py-2 pr-4">
+                                                Categories
+                                            </th>
+                                            <th className="py-2 pr-4">
+                                                Banner v.
+                                            </th>
+                                            <th className="py-2 pr-4">
+                                                Policy v.
+                                            </th>
                                             <th className="py-2 pr-4">Lang</th>
                                             <th className="py-2">Consent ID</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {records.map((r) => {
-                                            const granted = Object.entries(r.categories)
+                                            const granted = Object.entries(
+                                                r.categories,
+                                            )
                                                 .filter(([, v]) => v)
                                                 .map(([k]) => k);
+
                                             return (
                                                 <tr
                                                     key={r.consentId}
@@ -126,18 +145,29 @@ export default function ConsentLogs({
                                                 >
                                                     <td className="py-2 pr-4 text-xs">
                                                         {r.createdAt
-                                                            ? new Date(r.createdAt).toLocaleString()
+                                                            ? new Date(
+                                                                  r.createdAt,
+                                                              ).toLocaleString()
                                                             : '—'}
                                                     </td>
                                                     <td className="py-2 pr-4">
-                                                        <Badge variant="outline">{r.method}</Badge>
+                                                        <Badge variant="outline">
+                                                            {r.method}
+                                                        </Badge>
                                                     </td>
                                                     <td className="py-2 pr-4 text-xs">
-                                                        {granted.join(', ') || '—'}
+                                                        {granted.join(', ') ||
+                                                            '—'}
                                                     </td>
-                                                    <td className="py-2 pr-4">{r.bannerVersion}</td>
-                                                    <td className="py-2 pr-4">{r.policyVersion}</td>
-                                                    <td className="py-2 pr-4">{r.language ?? '—'}</td>
+                                                    <td className="py-2 pr-4">
+                                                        {r.bannerVersion}
+                                                    </td>
+                                                    <td className="py-2 pr-4">
+                                                        {r.policyVersion}
+                                                    </td>
+                                                    <td className="py-2 pr-4">
+                                                        {r.language ?? '—'}
+                                                    </td>
                                                     <td className="py-2 font-mono text-xs">
                                                         {r.consentId}
                                                     </td>
@@ -152,11 +182,9 @@ export default function ConsentLogs({
                 </Card>
 
                 <p className="text-xs text-muted-foreground">
-                    Records are retained for 24 months and then automatically purged.{' '}
-                    <Link
-                        href={`/domains/${domain.id}`}
-                        className="underline"
-                    >
+                    Records are retained for 24 months and then automatically
+                    purged.{' '}
+                    <Link href={`/domains/${domain.id}`} className="underline">
                         Back to domain
                     </Link>
                 </p>

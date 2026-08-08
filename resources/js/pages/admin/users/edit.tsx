@@ -13,7 +13,10 @@ import {
 } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard as adminDashboard } from '@/routes/admin';
-import { index as usersIndex, update as userUpdate } from '@/routes/admin/users';
+import {
+    index as usersIndex,
+    update as userUpdate,
+} from '@/routes/admin/users';
 import type { BreadcrumbItem } from '@/types';
 
 interface Props {
@@ -60,23 +63,39 @@ export default function EditUser({ user, tiers }: Props) {
                             <div className="space-y-2">
                                 <Label htmlFor="tier">Tier</Label>
                                 <Select
-                                    value={form.data.tier_id === null ? NO_TIER : String(form.data.tier_id)}
-                                    onValueChange={(v) => form.setData('tier_id', v === NO_TIER ? null : Number(v))}
+                                    value={
+                                        form.data.tier_id === null
+                                            ? NO_TIER
+                                            : String(form.data.tier_id)
+                                    }
+                                    onValueChange={(v) =>
+                                        form.setData(
+                                            'tier_id',
+                                            v === NO_TIER ? null : Number(v),
+                                        )
+                                    }
                                 >
                                     <SelectTrigger id="tier" className="w-full">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value={NO_TIER}>Default tier</SelectItem>
+                                        <SelectItem value={NO_TIER}>
+                                            Default tier
+                                        </SelectItem>
                                         {tiers.map((t) => (
-                                            <SelectItem key={t.id} value={String(t.id)}>
+                                            <SelectItem
+                                                key={t.id}
+                                                value={String(t.id)}
+                                            >
                                                 {t.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                                 {form.errors.tier_id && (
-                                    <p className="text-sm text-destructive">{form.errors.tier_id}</p>
+                                    <p className="text-sm text-destructive">
+                                        {form.errors.tier_id}
+                                    </p>
                                 )}
                             </div>
 
@@ -84,12 +103,21 @@ export default function EditUser({ user, tiers }: Props) {
                                 <Checkbox
                                     id="is_super_admin"
                                     checked={form.data.is_super_admin}
-                                    onCheckedChange={(c) => form.setData('is_super_admin', c === true)}
+                                    onCheckedChange={(c) =>
+                                        form.setData(
+                                            'is_super_admin',
+                                            c === true,
+                                        )
+                                    }
                                 />
-                                <Label htmlFor="is_super_admin">Super admin</Label>
+                                <Label htmlFor="is_super_admin">
+                                    Super admin
+                                </Label>
                             </div>
                             {form.errors.is_super_admin && (
-                                <p className="text-sm text-destructive">{form.errors.is_super_admin}</p>
+                                <p className="text-sm text-destructive">
+                                    {form.errors.is_super_admin}
+                                </p>
                             )}
 
                             <Button type="submit" disabled={form.processing}>

@@ -79,7 +79,9 @@ export default function Welcome() {
                                     href={auth.user ? dashboard() : register()}
                                     className="inline-block rounded-sm border border-black bg-[#1b1b18] px-6 py-2 font-medium text-white hover:bg-black dark:border-[#eeeeec] dark:bg-[#eeeeec] dark:text-[#1C1C1A] dark:hover:bg-white"
                                 >
-                                    {auth.user ? 'Go to dashboard' : 'Get started'}
+                                    {auth.user
+                                        ? 'Go to dashboard'
+                                        : 'Get started'}
                                 </Link>
                                 <a
                                     href="https://github.com/nrgribeiro/opencookie"

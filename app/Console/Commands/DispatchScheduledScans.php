@@ -23,7 +23,9 @@ class DispatchScheduledScans extends Command
             ->where('scheduled_scan_enabled', true)
             ->where('scan_frequency', $frequency)
             ->where('verify_status', DomainVerifyStatus::Verified->value)
-            ->get();
+            ->with('user')
+            ->get()
+            ->filter(fn (Domain $domain): bool => $domain->user?->resolveTier()->scheduled_scans_allowed ?? false);
 
         foreach ($domains as $domain) {
             $scan = $domain->scans()->create([
