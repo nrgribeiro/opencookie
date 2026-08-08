@@ -15,6 +15,8 @@ Module ref: spec §4.8
 - **Given** a selected time range, **when** I change it, **then** metrics and trend charts recompute for that range.
 - **Given** opt-in by category, **then** I see per-category acceptance percentages.
 
+**Status:** ⚠️ Partially implemented — missing: `DashboardController::consentMetrics()` computes accept/reject/custom rates, impressions, and per-category percentages for the selected range (`resources/js/pages/dashboard.tsx`), and metrics recompute on range change, but there is no trend chart over time — no charting library is used anywhere in the app, only point-in-time stat cards and per-category bars for the current range.
+
 ---
 
 ## US-DASH-2 — View scan summary
@@ -26,6 +28,8 @@ Module ref: spec §4.8
 ### Acceptance Criteria
 - **Given** a latest scan, **then** the dashboard shows total cookies by category and an unclassified count.
 - **Given** unclassified cookies exist, **then** they are surfaced with a link to classify them.
+
+**Status:** ✅ Implemented
 
 ---
 
@@ -40,6 +44,8 @@ Module ref: spec §4.8
 - **Given** any item fails, **then** it is marked clearly with a link to resolve it.
 - **Given** all items pass, **then** the domain shows a healthy/compliant state.
 
+**Status:** ⚠️ Partially implemented — missing: `App\Services\DomainCompliance::checklist()` provides all five checks (banner live, reject button, policy linked, scan recency, unclassified count = 0) and the owner dashboard renders them with check/cross icons, but `DashboardController::index()` only passes `checklist()`, not `evaluate()`'s `isCompliant` flag (which the admin dashboard does use), so there is no explicit overall "healthy/compliant" summary state shown to the owner — only the per-item list.
+
 ---
 
 ## US-DASH-4 — Preview and export recent logs
@@ -51,3 +57,5 @@ Module ref: spec §4.8
 ### Acceptance Criteria
 - **Given** recent consent events, **then** the dashboard shows a preview list (most recent N).
 - **Given** the preview, **when** I click export, **then** I am taken to the full export flow (see US-LOG-3).
+
+**Status:** ✅ Implemented
