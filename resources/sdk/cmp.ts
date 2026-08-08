@@ -28,9 +28,19 @@ interface BannerConfig {
     defaultLanguage: string;
     languages: string[];
     policyUrl: string | null;
-    layout: { type: string; position: string; theme: string; colors?: { accent?: string } };
+    layout: {
+        type: string;
+        position: string;
+        theme: string;
+        colors?: { accent?: string };
+    };
     content: Record<string, Record<string, string>>;
-    categories: { id: string; required: boolean; name: Record<string, string>; description: Record<string, string> }[];
+    categories: {
+        id: string;
+        required: boolean;
+        name: Record<string, string>;
+        description: Record<string, string>;
+    }[];
     cookieDetails: Record<string, CookieDetail[]>;
     consentModeMap: Record<string, string[]> | null;
 }
@@ -62,11 +72,17 @@ interface CmpApi {
 
 const STORAGE_KEY = 'cmp_consent';
 const NON_NECESSARY = ['preferences', 'statistics', 'marketing'];
-const CONSENT_SIGNALS = ['ad_storage', 'analytics_storage', 'ad_user_data', 'ad_personalization'];
+const CONSENT_SIGNALS = [
+    'ad_storage',
+    'analytics_storage',
+    'ad_user_data',
+    'ad_personalization',
+];
 
 const script = document.currentScript as HTMLScriptElement | null;
 const domainId = script?.getAttribute('data-domain') ?? '';
-const apiBase = (script?.getAttribute('data-api') ?? originFromScript(script)) + '/v1/c';
+const apiBase =
+    (script?.getAttribute('data-api') ?? originFromScript(script)) + '/v1/c';
 
 const listeners: ConsentListener[] = [];
 let config: BannerConfig | null = null;
@@ -87,7 +103,10 @@ function gtag(...args: unknown[]): void {
 }
 
 function setConsentDefaults(): void {
-    const denied: Record<string, string> = { wait_for_update: '500' } as Record<string, string>;
+    const denied: Record<string, string> = { wait_for_update: '500' } as Record<
+        string,
+        string
+    >;
     CONSENT_SIGNALS.forEach((s) => (denied[s] = 'denied'));
     gtag('consent', 'default', denied);
 }
@@ -117,6 +136,7 @@ function defaultConsentMap(): Record<string, string[]> {
 function loadStored(): StoredConsent | null {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
+
         return raw ? (JSON.parse(raw) as StoredConsent) : null;
     } catch {
         return null;
@@ -129,37 +149,67 @@ function persist(consent: StoredConsent): void {
     } catch {
         /* ignore */
     }
+
     document.cookie = `${STORAGE_KEY}=${consent.consentId}; path=/; max-age=${Math.floor((consent.exp - Date.now()) / 1000)}; SameSite=Lax`;
 }
 
-function isValid(stored: StoredConsent | null, cfg: BannerConfig | null): boolean {
-    if (!stored) return false;
-    if (stored.exp < Date.now()) return false;
-    if (cfg && (stored.bannerVersion !== cfg.bannerVersion || stored.policyVersion !== cfg.policyVersion)) {
+function isValid(
+    stored: StoredConsent | null,
+    cfg: BannerConfig | null,
+): boolean {
+    if (!stored) {
         return false;
     }
+
+    if (stored.exp < Date.now()) {
+        return false;
+    }
+
+    if (
+        cfg &&
+        (stored.bannerVersion !== cfg.bannerVersion ||
+            stored.policyVersion !== cfg.policyVersion)
+    ) {
+        return false;
+    }
+
     return true;
 }
 
 function uuid(): string {
-    if (crypto && 'randomUUID' in crypto) return crypto.randomUUID();
+    if (crypto && 'randomUUID' in crypto) {
+        return crypto.randomUUID();
+    }
+
     return 'c-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
 // --- Script gating (US-SDK-1) ----------------------------------------------
 
 function activateScripts(categories: Categories): void {
-    const blocked = document.querySelectorAll<HTMLScriptElement>('script[type="text/plain"][data-cmp-category]');
+    const blocked = document.querySelectorAll<HTMLScriptElement>(
+        'script[type="text/plain"][data-cmp-category]',
+    );
     blocked.forEach((node) => {
         const category = node.getAttribute('data-cmp-category') ?? '';
+
         if (category === 'necessary' || categories[category]) {
             const real = document.createElement('script');
+
             for (const attr of Array.from(node.attributes)) {
-                if (attr.name === 'type' || attr.name === 'data-cmp-category') continue;
+                if (attr.name === 'type' || attr.name === 'data-cmp-category') {
+                    continue;
+                }
+
                 real.setAttribute(attr.name, attr.value);
             }
+
             real.type = 'text/javascript';
-            if (node.textContent) real.textContent = node.textContent;
+
+            if (node.textContent) {
+                real.textContent = node.textContent;
+            }
+
             node.parentNode?.replaceChild(real, node);
         }
     });
@@ -172,31 +222,59 @@ function activateScripts(categories: Categories): void {
 // still be tagged manually with type="text/plain" data-cmp-category.
 
 const VENDOR_CATEGORY: { re: RegExp; category: string }[] = [
-    { re: /googletagmanager\.com|google-analytics\.com|\/gtag\/js/i, category: 'statistics' },
+    {
+        re: /googletagmanager\.com|google-analytics\.com|\/gtag\/js/i,
+        category: 'statistics',
+    },
     { re: /static\.hotjar\.com|script\.hotjar\.com/i, category: 'statistics' },
     { re: /clarity\.ms/i, category: 'statistics' },
     { re: /cdn\.segment\.com/i, category: 'statistics' },
     { re: /connect\.facebook\.net|facebook\.com\/tr/i, category: 'marketing' },
-    { re: /doubleclick\.net|googlesyndication\.com|googleadservices\.com/i, category: 'marketing' },
+    {
+        re: /doubleclick\.net|googlesyndication\.com|googleadservices\.com/i,
+        category: 'marketing',
+    },
 ];
 
 function vendorCategory(src: string): string | null {
-    for (const v of VENDOR_CATEGORY) if (v.re.test(src)) return v.category;
+    for (const v of VENDOR_CATEGORY) {
+        if (v.re.test(src)) {
+            return v.category;
+        }
+    }
+
     return null;
 }
 
 function consentGrants(category: string): boolean {
-    if (category === 'necessary') return true;
+    if (category === 'necessary') {
+        return true;
+    }
+
     return !!loadStored()?.categories?.[category];
 }
 
 function maybeBlockScript(node: Node): void {
-    if (!(node instanceof HTMLScriptElement)) return;
-    if (node.type === 'text/plain') return; // already blocked or manually tagged
+    if (!(node instanceof HTMLScriptElement)) {
+        return;
+    }
+
+    if (node.type === 'text/plain') {
+        return;
+    } // already blocked or manually tagged
+
     const src = node.getAttribute('src') ?? '';
-    if (!src) return;
+
+    if (!src) {
+        return;
+    }
+
     const category = vendorCategory(src);
-    if (!category || consentGrants(category)) return;
+
+    if (!category || consentGrants(category)) {
+        return;
+    }
+
     node.type = 'text/plain';
     node.setAttribute('data-cmp-category', category);
 }
@@ -204,7 +282,10 @@ function maybeBlockScript(node: Node): void {
 let autoBlockInstalled = false;
 
 function installAutoBlock(): void {
-    if (autoBlockInstalled) return;
+    if (autoBlockInstalled) {
+        return;
+    }
+
     autoBlockInstalled = true;
 
     const proto = Node.prototype as Node & {
@@ -220,14 +301,20 @@ function installAutoBlock(): void {
         } catch {
             /* ignore */
         }
+
         return origAppend.call(this, n) as T;
     };
-    proto.insertBefore = function <T extends Node>(this: Node, n: T, ref: Node | null): T {
+    proto.insertBefore = function <T extends Node>(
+        this: Node,
+        n: T,
+        ref: Node | null,
+    ): T {
         try {
             maybeBlockScript(n);
         } catch {
             /* ignore */
         }
+
         return origInsert.call(this, n, ref) as T;
     };
 }
@@ -240,7 +327,11 @@ function applyConsent(categories: Categories): void {
     listeners.forEach((cb) => cb(categories));
 }
 
-function sendConsent(method: string, categories: Categories, consentId: string): void {
+function sendConsent(
+    method: string,
+    categories: Categories,
+    consentId: string,
+): void {
     const body = JSON.stringify({
         consentId,
         method,
@@ -265,7 +356,10 @@ function sendImpression(): void {
     fetch(`${apiBase}/${domainId}/impression`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bannerVersion: config?.bannerVersion ?? 0, language: currentLang() }),
+        body: JSON.stringify({
+            bannerVersion: config?.bannerVersion ?? 0,
+            language: currentLang(),
+        }),
         keepalive: true,
     }).catch(() => {});
 }
@@ -325,11 +419,15 @@ const DEFAULT_ABOUT_COOKIES =
 function currentLang(): string {
     const langs = config?.languages ?? [];
     const def = config?.defaultLanguage ?? 'en';
-    if (!langs.length) return def;
 
-    const nav = (navigator.languages && navigator.languages.length
-        ? navigator.languages
-        : [navigator.language]
+    if (!langs.length) {
+        return def;
+    }
+
+    const nav = (
+        navigator.languages && navigator.languages.length
+            ? navigator.languages
+            : [navigator.language]
     ).filter(Boolean);
 
     for (const raw of nav) {
@@ -338,8 +436,12 @@ function currentLang(): string {
         const hit =
             langs.find((l) => l.toLowerCase() === lc) ??
             langs.find((l) => l.toLowerCase().split('-')[0] === base);
-        if (hit) return hit;
+
+        if (hit) {
+            return hit;
+        }
     }
+
     return def;
 }
 
@@ -347,10 +449,12 @@ function currentLang(): string {
 // of the consent text the visitor actually saw (US-LOG-1 proof) — not security.
 function hashStr(s: string): string {
     let h = 0x811c9dc5;
+
     for (let i = 0; i < s.length; i++) {
         h ^= s.charCodeAt(i);
         h = Math.imul(h, 0x01000193);
     }
+
     return (h >>> 0).toString(16).padStart(8, '0');
 }
 
@@ -366,34 +470,44 @@ function consentTextHash(): string {
         config?.policyUrl ?? '',
         aboutCookiesText(),
     ];
+
     return hashStr(parts.join('␟'));
 }
 
 function t(key: string): string {
     const lang = currentLang();
+
     return config?.content?.[lang]?.[key] ?? FALLBACK_LABELS[key] ?? key;
 }
 
 function categoryLabel(id: string): string {
     const lang = currentLang();
     const cat = config?.categories?.find((c) => c.id === id);
+
     return cat?.name?.[lang] ?? id;
 }
 
 function categoryDescription(id: string): string {
     const lang = currentLang();
     const cat = config?.categories?.find((c) => c.id === id);
+
     return cat?.description?.[lang] ?? '';
 }
 
 function cookiePurpose(cookie: CookieDetail): string {
     const lang = currentLang();
-    return cookie.purpose?.[lang] ?? cookie.purpose?.[config?.defaultLanguage ?? 'en'] ?? '';
+
+    return (
+        cookie.purpose?.[lang] ??
+        cookie.purpose?.[config?.defaultLanguage ?? 'en'] ??
+        ''
+    );
 }
 
 function aboutCookiesText(): string {
     const lang = currentLang();
     const def = config?.defaultLanguage ?? 'en';
+
     return (
         config?.content?.[lang]?.aboutCookies ||
         config?.content?.[def]?.aboutCookies ||
@@ -407,8 +521,11 @@ function removeBanner(): void {
 }
 
 function whenBody(fn: () => void): void {
-    if (document.body) fn();
-    else document.addEventListener('DOMContentLoaded', fn, { once: true });
+    if (document.body) {
+        fn();
+    } else {
+        document.addEventListener('DOMContentLoaded', fn, { once: true });
+    }
 }
 
 // Persistent re-open widget (US-SDK-5 / Art. 7(3)): always available once a
@@ -416,7 +533,10 @@ function whenBody(fn: () => void): void {
 let widgetEl: HTMLElement | null = null;
 
 function renderReopenWidget(): void {
-    if (widgetEl) return;
+    if (widgetEl) {
+        return;
+    }
+
     const dark = config?.layout?.theme === 'dark';
     const accent = config?.layout?.colors?.accent ?? '#2563eb';
     const right = config?.layout?.position === 'bottom-right';
@@ -446,7 +566,9 @@ function renderReopenWidget(): void {
         'padding:0',
         'z-index:2147483646',
         'box-shadow:0 4px 16px rgba(0,0,0,.25)',
-        dark ? 'background:#262626;color:#fafafa' : 'background:#fff;color:#171717',
+        dark
+            ? 'background:#262626;color:#fafafa'
+            : 'background:#fff;color:#171717',
         `border:1px solid ${accent}`,
     ].join(';');
     btn.addEventListener('click', () => api.showSettings());
@@ -455,7 +577,10 @@ function renderReopenWidget(): void {
 }
 
 function renderBanner(): void {
-    if (bannerEl) return;
+    if (bannerEl) {
+        return;
+    }
+
     const accent = config?.layout?.colors?.accent ?? '#2563eb';
     const dark = config?.layout?.theme === 'dark';
 
@@ -465,14 +590,18 @@ function renderBanner(): void {
     root.style.cssText = [
         'position:fixed',
         'bottom:16px',
-        config?.layout?.position === 'bottom-right' ? 'right:16px' : 'left:16px',
+        config?.layout?.position === 'bottom-right'
+            ? 'right:16px'
+            : 'left:16px',
         'max-width:420px',
         'z-index:2147483647',
         'padding:16px',
         'border-radius:12px',
         'box-shadow:0 8px 30px rgba(0,0,0,.2)',
         'font:14px/1.5 system-ui,sans-serif',
-        dark ? 'background:#171717;color:#fafafa' : 'background:#fff;color:#171717',
+        dark
+            ? 'background:#171717;color:#fafafa'
+            : 'background:#fff;color:#171717',
     ].join(';');
 
     const title = document.createElement('p');
@@ -488,8 +617,12 @@ function renderBanner(): void {
 
     // Equal prominence: Accept and Reject share identical styling (US-SDK / BAN-2).
     const primary = `appearance:none;border:0;border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer;color:#fff;background:${accent}`;
-    const accept = button(t('acceptAll'), primary, () => choose('accept_all', allCategories(true)));
-    const reject = button(t('rejectAll'), primary, () => choose('reject_all', allCategories(false)));
+    const accept = button(t('acceptAll'), primary, () =>
+        choose('accept_all', allCategories(true)),
+    );
+    const reject = button(t('rejectAll'), primary, () =>
+        choose('reject_all', allCategories(false)),
+    );
     const customize = button(
         t('customize'),
         `appearance:none;border:1px solid ${dark ? '#444' : '#ccc'};border-radius:8px;padding:8px 14px;cursor:pointer;background:transparent;color:inherit`,
@@ -500,12 +633,14 @@ function renderBanner(): void {
     root.append(title, body, actions);
 
     const footer = document.createElement('div');
-    footer.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:10px;font-size:12px;opacity:.75';
+    footer.style.cssText =
+        'display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:10px;font-size:12px;opacity:.75';
 
     const detailsLink = document.createElement('a');
     detailsLink.href = '#';
     detailsLink.textContent = t('details');
-    detailsLink.style.cssText = 'color:inherit;text-decoration:underline;cursor:pointer';
+    detailsLink.style.cssText =
+        'color:inherit;text-decoration:underline;cursor:pointer';
     detailsLink.addEventListener('click', (e) => {
         e.preventDefault();
         renderDetailsModal();
@@ -532,13 +667,15 @@ function renderCustomize(root: HTMLElement): void {
     root.querySelectorAll('[data-cmp-panel]').forEach((n) => n.remove());
     const panel = document.createElement('div');
     panel.setAttribute('data-cmp-panel', '');
-    panel.style.cssText = 'margin-top:12px;display:flex;flex-direction:column;gap:8px';
+    panel.style.cssText =
+        'margin-top:12px;display:flex;flex-direction:column;gap:8px';
 
     const state: Categories = {};
     NON_NECESSARY.forEach((cat) => {
         state[cat] = false;
         const row = document.createElement('label');
-        row.style.cssText = 'display:flex;align-items:center;gap:8px;text-transform:capitalize';
+        row.style.cssText =
+            'display:flex;align-items:center;gap:8px;text-transform:capitalize';
         const cb = document.createElement('input');
         cb.type = 'checkbox';
         cb.addEventListener('change', () => (state[cat] = cb.checked));
@@ -562,7 +699,8 @@ function renderCustomize(root: HTMLElement): void {
     );
 
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:12px;flex-wrap:wrap';
+    row.style.cssText =
+        'display:flex;align-items:center;gap:12px;flex-wrap:wrap';
     row.append(save, detailsBtn);
     panel.append(row);
     root.append(panel);
@@ -579,12 +717,15 @@ function closeDetailsModal(): void {
 }
 
 function detailsKeyHandler(e: KeyboardEvent): void {
-    if (e.key === 'Escape') closeDetailsModal();
+    if (e.key === 'Escape') {
+        closeDetailsModal();
+    }
 }
 
 function escapeHtml(s: string): string {
     const d = document.createElement('div');
     d.textContent = s;
+
     return d.innerHTML;
 }
 
@@ -593,17 +734,22 @@ function categoryOrder(): string[] {
     const fromCookies = Object.keys(config?.cookieDetails ?? {});
     const seen = new Set<string>();
     const ordered: string[] = [];
+
     for (const id of [...fromConfig, ...fromCookies]) {
         if (!seen.has(id)) {
             seen.add(id);
             ordered.push(id);
         }
     }
+
     return ordered;
 }
 
 function renderDetailsModal(): void {
-    if (detailsModalEl) return;
+    if (detailsModalEl) {
+        return;
+    }
+
     const dark = config?.layout?.theme === 'dark';
     const accent = config?.layout?.colors?.accent ?? '#2563eb';
 
@@ -623,7 +769,9 @@ function renderDetailsModal(): void {
         'font:14px/1.5 system-ui,sans-serif',
     ].join(';');
     overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) closeDetailsModal();
+        if (e.target === overlay) {
+            closeDetailsModal();
+        }
     });
 
     const panel = document.createElement('div');
@@ -635,7 +783,9 @@ function renderDetailsModal(): void {
         'flex-direction:column',
         'border-radius:14px',
         'box-shadow:0 16px 60px rgba(0,0,0,.4)',
-        dark ? 'background:#171717;color:#fafafa' : 'background:#fff;color:#171717',
+        dark
+            ? 'background:#171717;color:#fafafa'
+            : 'background:#fff;color:#171717',
     ].join(';');
 
     const header = document.createElement('div');
@@ -699,16 +849,27 @@ function renderDetailsModal(): void {
     document.addEventListener('keydown', detailsKeyHandler);
 }
 
-function makeTab(label: string, active: boolean, dark: boolean, accent: string): HTMLButtonElement {
+function makeTab(
+    label: string,
+    active: boolean,
+    dark: boolean,
+    accent: string,
+): HTMLButtonElement {
     const b = document.createElement('button');
     b.type = 'button';
     b.setAttribute('role', 'tab');
     b.textContent = label;
     markActiveTab(b, active, dark, accent);
+
     return b;
 }
 
-function markActiveTab(btn: HTMLButtonElement, active: boolean, dark: boolean, accent: string): void {
+function markActiveTab(
+    btn: HTMLButtonElement,
+    active: boolean,
+    dark: boolean,
+    accent: string,
+): void {
     btn.setAttribute('aria-selected', active ? 'true' : 'false');
     btn.style.cssText = [
         'appearance:none',
@@ -726,12 +887,15 @@ function markActiveTab(btn: HTMLButtonElement, active: boolean, dark: boolean, a
 
 function buildAboutPanel(dark: boolean): HTMLElement {
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex;flex-direction:column;gap:12px;max-width:680px';
+    wrap.style.cssText =
+        'display:flex;flex-direction:column;gap:12px;max-width:680px';
 
     const text = aboutCookiesText();
     text.split(/\n\n+/).forEach((para) => {
         const p = document.createElement('p');
-        p.style.cssText = 'margin:0;white-space:pre-wrap;color:' + (dark ? '#e5e5e5' : '#222');
+        p.style.cssText =
+            'margin:0;white-space:pre-wrap;color:' +
+            (dark ? '#e5e5e5' : '#222');
         p.textContent = para.trim();
         wrap.append(p);
     });
@@ -752,11 +916,13 @@ function buildCookiesPanel(dark: boolean, accent: string): HTMLElement {
         section.style.cssText = 'display:flex;flex-direction:column;gap:8px';
 
         const heading = document.createElement('h3');
-        heading.textContent = categoryLabel(catId) + ' (' + cookies.length + ')';
+        heading.textContent =
+            categoryLabel(catId) + ' (' + cookies.length + ')';
         heading.style.cssText = `margin:0;font-size:15px;font-weight:600;color:${accent}`;
         section.append(heading);
 
         const desc = categoryDescription(catId);
+
         if (desc) {
             const p = document.createElement('p');
             p.textContent = desc;
@@ -767,37 +933,57 @@ function buildCookiesPanel(dark: boolean, accent: string): HTMLElement {
         if (cookies.length === 0) {
             const empty = document.createElement('p');
             empty.textContent = t('noCookies');
-            empty.style.cssText = 'margin:6px 0 0;font-size:13px;opacity:.6;font-style:italic';
+            empty.style.cssText =
+                'margin:6px 0 0;font-size:13px;opacity:.6;font-style:italic';
             section.append(empty);
         } else {
             const tableWrap = document.createElement('div');
-            tableWrap.style.cssText = 'overflow-x:auto;border:1px solid ' + (dark ? '#2a2a2a' : '#eee') + ';border-radius:8px';
+            tableWrap.style.cssText =
+                'overflow-x:auto;border:1px solid ' +
+                (dark ? '#2a2a2a' : '#eee') +
+                ';border-radius:8px';
 
             const table = document.createElement('table');
-            table.style.cssText = 'width:100%;border-collapse:collapse;font-size:13px';
+            table.style.cssText =
+                'width:100%;border-collapse:collapse;font-size:13px';
 
             const thead = document.createElement('thead');
             thead.innerHTML =
-                '<tr style="text-align:left;background:' + (dark ? '#202020' : '#f7f7f7') + '">' +
+                '<tr style="text-align:left;background:' +
+                (dark ? '#202020' : '#f7f7f7') +
+                '">' +
                 '<th style="padding:8px 10px;font-weight:600">Cookie</th>' +
-                '<th style="padding:8px 10px;font-weight:600">' + escapeHtml(t('providerLabel')) + '</th>' +
+                '<th style="padding:8px 10px;font-weight:600">' +
+                escapeHtml(t('providerLabel')) +
+                '</th>' +
                 '<th style="padding:8px 10px;font-weight:600">Purpose</th>' +
-                '<th style="padding:8px 10px;font-weight:600">' + escapeHtml(t('expiryLabel')) + '</th>' +
-                '<th style="padding:8px 10px;font-weight:600">' + escapeHtml(t('retentionLabel')) + '</th>' +
+                '<th style="padding:8px 10px;font-weight:600">' +
+                escapeHtml(t('expiryLabel')) +
+                '</th>' +
+                '<th style="padding:8px 10px;font-weight:600">' +
+                escapeHtml(t('retentionLabel')) +
+                '</th>' +
                 '</tr>';
 
             const tbody = document.createElement('tbody');
             cookies.forEach((cookie) => {
                 const tr = document.createElement('tr');
-                tr.style.cssText = 'border-top:1px solid ' + (dark ? '#2a2a2a' : '#eee');
+                tr.style.cssText =
+                    'border-top:1px solid ' + (dark ? '#2a2a2a' : '#eee');
 
                 const nameCell = document.createElement('td');
-                nameCell.style.cssText = 'padding:8px 10px;font-family:ui-monospace,monospace;font-size:12px;vertical-align:top;word-break:break-all';
+                nameCell.style.cssText =
+                    'padding:8px 10px;font-family:ui-monospace,monospace;font-size:12px;vertical-align:top;word-break:break-all';
                 nameCell.textContent = cookie.name;
 
                 const providerCell = document.createElement('td');
-                providerCell.style.cssText = 'padding:8px 10px;vertical-align:top';
-                const providerText = cookie.provider || (cookie.sourceDomain ?? (cookie.isFirstParty ? '1st party' : ''));
+                providerCell.style.cssText =
+                    'padding:8px 10px;vertical-align:top';
+                const providerText =
+                    cookie.provider ||
+                    (cookie.sourceDomain ??
+                        (cookie.isFirstParty ? '1st party' : ''));
+
                 if (cookie.providerUrl) {
                     const a = document.createElement('a');
                     a.href = cookie.providerUrl;
@@ -809,12 +995,16 @@ function buildCookiesPanel(dark: boolean, accent: string): HTMLElement {
                 } else {
                     providerCell.append(document.createTextNode(providerText));
                 }
+
                 if (cookie.dataController) {
                     const ctrl = document.createElement('div');
-                    ctrl.style.cssText = 'font-size:11px;opacity:.6;margin-top:2px';
-                    ctrl.textContent = t('controllerLabel') + ': ' + cookie.dataController;
+                    ctrl.style.cssText =
+                        'font-size:11px;opacity:.6;margin-top:2px';
+                    ctrl.textContent =
+                        t('controllerLabel') + ': ' + cookie.dataController;
                     providerCell.append(ctrl);
                 }
+
                 if (cookie.gdprPortalUrl) {
                     const portal = document.createElement('a');
                     portal.href = cookie.gdprPortalUrl;
@@ -826,18 +1016,27 @@ function buildCookiesPanel(dark: boolean, accent: string): HTMLElement {
                 }
 
                 const purposeCell = document.createElement('td');
-                purposeCell.style.cssText = 'padding:8px 10px;vertical-align:top';
+                purposeCell.style.cssText =
+                    'padding:8px 10px;vertical-align:top';
                 purposeCell.textContent = cookiePurpose(cookie);
 
                 const expiryCell = document.createElement('td');
-                expiryCell.style.cssText = 'padding:8px 10px;vertical-align:top;white-space:nowrap';
+                expiryCell.style.cssText =
+                    'padding:8px 10px;vertical-align:top;white-space:nowrap';
                 expiryCell.textContent = cookie.expiry || t('sessionExpiry');
 
                 const retentionCell = document.createElement('td');
-                retentionCell.style.cssText = 'padding:8px 10px;vertical-align:top;white-space:nowrap';
+                retentionCell.style.cssText =
+                    'padding:8px 10px;vertical-align:top;white-space:nowrap';
                 retentionCell.textContent = cookie.retention || '—';
 
-                tr.append(nameCell, providerCell, purposeCell, expiryCell, retentionCell);
+                tr.append(
+                    nameCell,
+                    providerCell,
+                    purposeCell,
+                    expiryCell,
+                    retentionCell,
+                );
                 tbody.append(tr);
             });
 
@@ -852,18 +1051,24 @@ function buildCookiesPanel(dark: boolean, accent: string): HTMLElement {
     return wrap;
 }
 
-function button(label: string, css: string, onClick: () => void): HTMLButtonElement {
+function button(
+    label: string,
+    css: string,
+    onClick: () => void,
+): HTMLButtonElement {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = label;
     b.style.cssText = css;
     b.addEventListener('click', onClick);
+
     return b;
 }
 
 function allCategories(value: boolean): Categories {
     const out: Categories = { necessary: true };
     NON_NECESSARY.forEach((c) => (out[c] = value));
+
     return out;
 }
 
@@ -876,7 +1081,9 @@ const api: CmpApi = {
         // Reopen (e.g. floating widget) shows the banner with the category
         // options hidden; the Customize button reveals them. Auto-opening the
         // panel here made Customize a no-op (panel already visible).
-        if (!bannerEl) renderBanner();
+        if (!bannerEl) {
+            renderBanner();
+        }
     },
     showDetails: () => renderDetailsModal(),
 };
@@ -886,17 +1093,25 @@ async function boot(): Promise<void> {
     setConsentDefaults();
     installAutoBlock();
 
-    if (!domainId) return;
+    if (!domainId) {
+        return;
+    }
 
     // Apply a still-valid prior choice without a network round-trip first.
     const stored = loadStored();
+
     if (stored && stored.exp > Date.now()) {
         applyConsent(stored.categories);
     }
 
     try {
-        const res = await fetch(`${apiBase}/${domainId}/config`, { credentials: 'omit' });
-        if (res.ok) config = (await res.json()) as BannerConfig;
+        const res = await fetch(`${apiBase}/${domainId}/config`, {
+            credentials: 'omit',
+        });
+
+        if (res.ok) {
+            config = (await res.json()) as BannerConfig;
+        }
     } catch {
         /* fail-safe: no config → still gate + show fallback banner below */
     }
@@ -904,11 +1119,14 @@ async function boot(): Promise<void> {
     if (isValid(stored, config)) {
         applyConsent((stored as StoredConsent).categories);
         whenBody(renderReopenWidget);
+
         return;
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', renderBanner, { once: true });
+        document.addEventListener('DOMContentLoaded', renderBanner, {
+            once: true,
+        });
     } else {
         renderBanner();
     }

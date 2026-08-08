@@ -131,7 +131,11 @@ export default function Guide() {
 
                 {/* Steps */}
                 <div className="space-y-4">
-                    <Step number={1} icon={Globe} title="Add and verify your domain">
+                    <Step
+                        number={1}
+                        icon={Globe}
+                        title="Add and verify your domain"
+                    >
                         <p>
                             Go to{' '}
                             <Link
@@ -160,21 +164,27 @@ export default function Guide() {
                             <Lightbulb className="h-4 w-4" />
                             <AlertTitle>Not sure how?</AlertTitle>
                             <AlertDescription>
-                                If you don't manage your own DNS, the meta-tag or
-                                file method is easiest — forward the instructions
-                                to whoever built your site.
+                                If you don't manage your own DNS, the meta-tag
+                                or file method is easiest — forward the
+                                instructions to whoever built your site.
                             </AlertDescription>
                         </Alert>
                     </Step>
 
-                    <Step number={2} icon={ScanLine} title="Scan your site for cookies">
+                    <Step
+                        number={2}
+                        icon={ScanLine}
+                        title="Scan your site for cookies"
+                    >
                         <p>
                             Open your verified domain and click{' '}
-                            <strong className="text-foreground">Run scan</strong>
+                            <strong className="text-foreground">
+                                Run scan
+                            </strong>
                             . OpenCookie visits your pages like a real browser
-                            and records every cookie, tracker, and storage key it
-                            finds — including the sneaky ones set by JavaScript
-                            (Google Analytics, Meta Pixel, etc.).
+                            and records every cookie, tracker, and storage key
+                            it finds — including the sneaky ones set by
+                            JavaScript (Google Analytics, Meta Pixel, etc.).
                         </p>
                         <p>
                             The scan runs in the background. When it finishes
@@ -200,15 +210,18 @@ export default function Guide() {
                             <strong className="text-foreground">
                                 change the category
                             </strong>{' '}
-                            or fill in the details: purpose, who controls the data
-                            (the data controller), how long it's kept (retention),
-                            and a privacy/GDPR rights link.
+                            or fill in the details: purpose, who controls the
+                            data (the data controller), how long it's kept
+                            (retention), and a privacy/GDPR rights link.
                         </p>
                         <p>
                             Anything marked{' '}
                             <Badge variant="outline">Unclassified</Badge> should
                             be reviewed before you go live. Your edits are saved
-                            as <strong className="text-foreground">overrides</strong>{' '}
+                            as{' '}
+                            <strong className="text-foreground">
+                                overrides
+                            </strong>{' '}
                             and survive future scans, so you only do this once.
                         </p>
                         <Alert>
@@ -216,9 +229,9 @@ export default function Guide() {
                             <AlertTitle>Why it matters</AlertTitle>
                             <AlertDescription>
                                 Accurate categories are what make the banner
-                                block the right scripts. A marketing cookie filed
-                                as "necessary" would load without consent — a
-                                compliance gap.
+                                block the right scripts. A marketing cookie
+                                filed as "necessary" would load without consent
+                                — a compliance gap.
                             </AlertDescription>
                         </Alert>
                     </Step>
@@ -234,9 +247,10 @@ export default function Guide() {
                                 Banner builder
                             </strong>{' '}
                             choose the layout, colours, and wording, and add
-                            translations if your site is multilingual. Preview it,
-                            then click{' '}
-                            <strong className="text-foreground">Publish</strong>.
+                            translations if your site is multilingual. Preview
+                            it, then click{' '}
+                            <strong className="text-foreground">Publish</strong>
+                            .
                         </p>
                         <p className="font-medium text-foreground">
                             To stay compliant, your banner must:
@@ -313,7 +327,8 @@ export default function Guide() {
                     >
                         <p>
                             This is the step that actually makes you compliant.
-                            For each tracking script already on your site, change{' '}
+                            For each tracking script already on your site,
+                            change{' '}
                             <code className="rounded bg-muted px-1 py-0.5">
                                 type="text/javascript"
                             </code>{' '}
@@ -365,8 +380,8 @@ export default function Guide() {
                             <code className="rounded bg-muted px-1 py-0.5">
                                 marketing
                             </code>
-                            . If you use Google Ads or Analytics, OpenCookie also
-                            sends the matching{' '}
+                            . If you use Google Ads or Analytics, OpenCookie
+                            also sends the matching{' '}
                             <strong className="text-foreground">
                                 Google Consent Mode v2
                             </strong>{' '}
@@ -400,8 +415,8 @@ export default function Guide() {
                                 reload.
                             </li>
                             <li>
-                                The floating button lets you reopen the banner and
-                                change your mind.
+                                The floating button lets you reopen the banner
+                                and change your mind.
                             </li>
                         </ul>
                     </Step>

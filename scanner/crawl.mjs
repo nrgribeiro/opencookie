@@ -18,9 +18,17 @@ import { chromium } from 'playwright';
 
 function readConfig() {
     const raw = process.argv[2];
-    if (!raw) throw new Error('missing config argument');
+
+    if (!raw) {
+throw new Error('missing config argument');
+}
+
     const cfg = JSON.parse(raw);
-    if (!cfg.url) throw new Error('config.url is required');
+
+    if (!cfg.url) {
+throw new Error('config.url is required');
+}
+
     return {
         url: cfg.url,
         maxPages: Math.max(1, Math.min(Number(cfg.maxPages) || 100, 100)),
@@ -31,18 +39,26 @@ function readConfig() {
 function baseHost(hostname) {
     // Registrable-ish base: last two labels. Good enough for first-party check.
     const parts = hostname.split('.').filter(Boolean);
+
     return parts.slice(-2).join('.');
 }
 
 function isFirstParty(candidate, rootBase) {
-    if (!candidate) return true;
+    if (!candidate) {
+return true;
+}
+
     const c = candidate.replace(/^\./, '').toLowerCase();
+
     return c === rootBase || c.endsWith('.' + rootBase);
 }
 
 function expiryString(expires) {
     // Playwright cookie.expires: -1 = session, else unix seconds.
-    if (expires === undefined || expires === null || expires === -1) return 'session';
+    if (expires === undefined || expires === null || expires === -1) {
+return 'session';
+}
+
     try {
         return new Date(expires * 1000).toISOString();
     } catch {
@@ -67,10 +83,17 @@ async function main() {
     context.on('request', (req) => {
         try {
             const u = new URL(req.url());
-            if (isFirstParty(u.hostname, rootBase)) return;
+
+            if (isFirstParty(u.hostname, rootBase)) {
+return;
+}
+
             const type = req.resourceType();
+
             if (type === 'image') {
-                if (!thirdPartyHosts.has(u.hostname)) thirdPartyHosts.set(u.hostname, 'pixel');
+                if (!thirdPartyHosts.has(u.hostname)) {
+thirdPartyHosts.set(u.hostname, 'pixel');
+}
             } else if (type === 'script' || type === 'xhr' || type === 'fetch') {
                 thirdPartyHosts.set(u.hostname, 'script');
             }
@@ -87,10 +110,15 @@ async function main() {
     while (toVisit.length > 0 && pagesCrawled < cfg.maxPages) {
         const next = toVisit.shift();
         const norm = normalize(next);
-        if (visited.has(norm)) continue;
+
+        if (visited.has(norm)) {
+continue;
+}
+
         visited.add(norm);
 
         const page = await context.newPage();
+
         try {
             await page.goto(next, { waitUntil: 'networkidle', timeout: cfg.pageTimeoutMs });
             pagesCrawled++;
@@ -98,21 +126,36 @@ async function main() {
             // Storage keys for this page's origin.
             const keys = await page.evaluate(() => {
                 const out = { local: [], session: [] };
+
                 try {
-                    for (let i = 0; i < localStorage.length; i++) out.local.push(localStorage.key(i));
+                    for (let i = 0; i < localStorage.length; i++) {
+out.local.push(localStorage.key(i));
+}
                 } catch {}
+
                 try {
-                    for (let i = 0; i < sessionStorage.length; i++) out.session.push(sessionStorage.key(i));
+                    for (let i = 0; i < sessionStorage.length; i++) {
+out.session.push(sessionStorage.key(i));
+}
                 } catch {}
+
                 return out;
             });
+
             for (const k of keys.local) {
                 const id = 'local:' + k;
-                if (k && !storageSeen.has(id)) { storageSeen.add(id); storage.push({ name: k, type: 'local_storage' }); }
+
+                if (k && !storageSeen.has(id)) {
+ storageSeen.add(id); storage.push({ name: k, type: 'local_storage' }); 
+}
             }
+
             for (const k of keys.session) {
                 const id = 'session:' + k;
-                if (k && !storageSeen.has(id)) { storageSeen.add(id); storage.push({ name: k, type: 'session_storage' }); }
+
+                if (k && !storageSeen.has(id)) {
+ storageSeen.add(id); storage.push({ name: k, type: 'session_storage' }); 
+}
             }
 
             // Discover more same-host links (BFS) until we hit the cap.
@@ -120,14 +163,28 @@ async function main() {
                 const hrefs = await page.evaluate(() =>
                     Array.from(document.querySelectorAll('a[href]')).map((a) => a.href),
                 );
+
                 for (const href of hrefs) {
-                    if (queued.size >= cfg.maxPages) break;
+                    if (queued.size >= cfg.maxPages) {
+break;
+}
+
                     try {
                         const u = new URL(href);
-                        if (u.protocol !== 'http:' && u.protocol !== 'https:') continue;
-                        if (!isFirstParty(u.hostname, rootBase)) continue;
+
+                        if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+continue;
+}
+
+                        if (!isFirstParty(u.hostname, rootBase)) {
+continue;
+}
+
                         const n = normalize(u.href);
-                        if (!queued.has(n)) { queued.add(n); toVisit.push(u.href); }
+
+                        if (!queued.has(n)) {
+ queued.add(n); toVisit.push(u.href); 
+}
                     } catch {
                         /* ignore */
                     }
@@ -187,6 +244,7 @@ function normalize(href) {
     try {
         const u = new URL(href);
         u.hash = '';
+
         return u.href;
     } catch {
         return href;

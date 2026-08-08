@@ -150,15 +150,31 @@ function Loaded({
 
             {/* US-DASH-1 — consent metrics */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Stat label="Consent events" value={metrics.total.toLocaleString()} />
-                <Stat label="Banner impressions" value={metrics.impressions.toLocaleString()} />
-                <Stat label="Accept all" value={`${acceptPct}%`} sub={`${metrics.methods.acceptAll}`} />
-                <Stat label="Reject all" value={`${rejectPct}%`} sub={`${metrics.methods.rejectAll}`} />
+                <Stat
+                    label="Consent events"
+                    value={metrics.total.toLocaleString()}
+                />
+                <Stat
+                    label="Banner impressions"
+                    value={metrics.impressions.toLocaleString()}
+                />
+                <Stat
+                    label="Accept all"
+                    value={`${acceptPct}%`}
+                    sub={`${metrics.methods.acceptAll}`}
+                />
+                <Stat
+                    label="Reject all"
+                    value={`${rejectPct}%`}
+                    sub={`${metrics.methods.rejectAll}`}
+                />
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">Opt-in by category</CardTitle>
+                    <CardTitle className="text-base">
+                        Opt-in by category
+                    </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                     {Object.entries(metrics.categories).map(([key, value]) => (
@@ -172,7 +188,9 @@ function Loaded({
                             <div className="h-2 w-full overflow-hidden rounded bg-muted">
                                 <div
                                     className="h-full bg-primary"
-                                    style={{ width: `${Math.min(value.percent, 100)}%` }}
+                                    style={{
+                                        width: `${Math.min(value.percent, 100)}%`,
+                                    }}
                                 />
                             </div>
                         </div>
@@ -187,26 +205,36 @@ function Loaded({
                 {/* US-DASH-2 */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">Scan summary</CardTitle>
+                        <CardTitle className="text-base">
+                            Scan summary
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2 text-sm">
                         <div className="flex justify-between">
                             <span>Total cookies</span>
-                            <span className="font-medium">{scanSummary.total}</span>
+                            <span className="font-medium">
+                                {scanSummary.total}
+                            </span>
                         </div>
-                        {Object.entries(scanSummary.byCategory).map(([cat, n]) => (
-                            <div key={cat} className="flex justify-between text-muted-foreground">
-                                <span className="capitalize">{cat}</span>
-                                <span>{n}</span>
-                            </div>
-                        ))}
+                        {Object.entries(scanSummary.byCategory).map(
+                            ([cat, n]) => (
+                                <div
+                                    key={cat}
+                                    className="flex justify-between text-muted-foreground"
+                                >
+                                    <span className="capitalize">{cat}</span>
+                                    <span>{n}</span>
+                                </div>
+                            ),
+                        )}
                         {scanSummary.unclassified > 0 && (
                             <p className="pt-2">
                                 <Link
                                     href={`/domains/${domain.id}`}
                                     className="text-sm text-red-600 underline"
                                 >
-                                    Classify {scanSummary.unclassified} cookie(s)
+                                    Classify {scanSummary.unclassified}{' '}
+                                    cookie(s)
                                 </Link>
                             </p>
                         )}
@@ -216,12 +244,17 @@ function Loaded({
                 {/* US-DASH-3 */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">Compliance health</CardTitle>
+                        <CardTitle className="text-base">
+                            Compliance health
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <ul className="space-y-2 text-sm">
                             {health.map((item) => (
-                                <li key={item.key} className="flex items-start gap-2">
+                                <li
+                                    key={item.key}
+                                    className="flex items-start gap-2"
+                                >
                                     {item.ok ? (
                                         <Check className="mt-0.5 h-4 w-4 text-emerald-600" />
                                     ) : (
@@ -245,14 +278,20 @@ function Loaded({
             {/* US-DASH-4 */}
             <Card>
                 <CardHeader className="flex-row items-center justify-between space-y-0">
-                    <CardTitle className="text-base">Recent consent events</CardTitle>
+                    <CardTitle className="text-base">
+                        Recent consent events
+                    </CardTitle>
                     <Button asChild size="sm" variant="outline">
-                        <Link href={`/domains/${domain.id}/consent-logs`}>View all / export</Link>
+                        <Link href={`/domains/${domain.id}/consent-logs`}>
+                            View all / export
+                        </Link>
                     </Button>
                 </CardHeader>
                 <CardContent>
                     {recent.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No consent events yet.</p>
+                        <p className="text-sm text-muted-foreground">
+                            No consent events yet.
+                        </p>
                     ) : (
                         <ul className="space-y-2 text-sm">
                             {recent.map((r) => (
@@ -260,9 +299,13 @@ function Loaded({
                                     key={r.consentId}
                                     className="flex flex-wrap items-center justify-between gap-2 border-b py-1 last:border-0"
                                 >
-                                    <span className="font-mono text-xs">{r.consentId}</span>
+                                    <span className="font-mono text-xs">
+                                        {r.consentId}
+                                    </span>
                                     <div className="flex items-center gap-2">
-                                        <Badge variant="outline">{r.method}</Badge>
+                                        <Badge variant="outline">
+                                            {r.method}
+                                        </Badge>
                                         {r.language && (
                                             <span className="text-xs text-muted-foreground">
                                                 {r.language}
@@ -270,7 +313,9 @@ function Loaded({
                                         )}
                                         <span className="text-xs text-muted-foreground">
                                             {r.createdAt
-                                                ? new Date(r.createdAt).toLocaleString()
+                                                ? new Date(
+                                                      r.createdAt,
+                                                  ).toLocaleString()
                                                 : ''}
                                         </span>
                                     </div>
@@ -284,7 +329,15 @@ function Loaded({
     );
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function Stat({
+    label,
+    value,
+    sub,
+}: {
+    label: string;
+    value: string;
+    sub?: string;
+}) {
     return (
         <Card>
             <CardContent className="space-y-1 py-4">
