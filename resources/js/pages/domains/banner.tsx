@@ -278,6 +278,25 @@ export default function BannerBuilder({
                                         }
                                     />
                                 </div>
+                                <div className="grid gap-2 sm:col-span-2">
+                                    <Label htmlFor="logo">
+                                        Logo URL (optional)
+                                    </Label>
+                                    <Input
+                                        id="logo"
+                                        value={layout.logo ?? ''}
+                                        onChange={(e) =>
+                                            setLayout({
+                                                ...layout,
+                                                logo: e.target.value || null,
+                                            })
+                                        }
+                                        placeholder="https://example.com/logo.png"
+                                    />
+                                    <InputError
+                                        message={errors['layout.logo']}
+                                    />
+                                </div>
                             </CardContent>
                         </Card>
 
@@ -426,6 +445,13 @@ export default function BannerBuilder({
                                 <div
                                     className={`rounded-lg border p-4 ${layout.theme === 'dark' ? 'bg-neutral-900 text-neutral-100' : 'bg-white text-neutral-900'}`}
                                 >
+                                    {layout.logo && (
+                                        <img
+                                            src={layout.logo}
+                                            alt="Banner logo"
+                                            className="mb-2 h-8 w-auto object-contain"
+                                        />
+                                    )}
                                     <p className="font-semibold">
                                         {c.title || 'Title'}
                                     </p>

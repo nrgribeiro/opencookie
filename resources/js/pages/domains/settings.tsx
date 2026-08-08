@@ -26,6 +26,7 @@ interface DomainSettings {
     consentExpiryDays: number;
     scheduledScanEnabled: boolean;
     scanFrequency: 'weekly' | 'monthly' | null;
+    scheduledScansAllowed: boolean;
 }
 
 interface PolicyVersionRow {
@@ -136,6 +137,10 @@ export default function DomainSettings({
                                             id="scheduledScanEnabled"
                                             name="scheduledScanEnabled"
                                             checked={scheduledEnabled}
+                                            disabled={
+                                                !domain.scheduledScansAllowed &&
+                                                !scheduledEnabled
+                                            }
                                             onCheckedChange={(v) =>
                                                 setScheduledEnabled(v === true)
                                             }
@@ -144,6 +149,13 @@ export default function DomainSettings({
                                             Run scans automatically
                                         </Label>
                                     </div>
+                                    {!domain.scheduledScansAllowed && (
+                                        <p className="text-xs text-amber-600">
+                                            Scheduled scans aren&apos;t included
+                                            in your current plan. Upgrade your
+                                            tier to enable automatic scanning.
+                                        </p>
+                                    )}
                                     {scheduledEnabled && (
                                         <div className="grid max-w-xs gap-2">
                                             <Label htmlFor="scanFrequency">

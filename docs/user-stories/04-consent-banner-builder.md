@@ -14,7 +14,7 @@ Module ref: spec §4.4
 - **Given** the builder, **when** I set layout (box/bar/popup), position, theme (light/dark), colors, and logo, **then** changes reflect in a live preview.
 - **Given** I save, **then** a new draft banner config version is stored without affecting the live banner until published.
 
-**Status:** ⚠️ Partially implemented — missing: no logo upload/URL field in the builder UI (`resources/js/pages/domains/banner.tsx`) even though `BannerConfig.layout.logo` and validation (`layout.logo` in `UpdateBannerRequest`) already support it; the in-page "preview" is a hand-rolled mock (title/body/buttons only), not the actual SDK-rendered banner. Layout type/position/theme/accent color and draft/publish separation (`BannerService::draftFor`) are implemented.
+**Status:** ⚠️ Partially implemented — `resources/js/pages/domains/banner.tsx` now has a Logo URL field wired to `BannerConfig.layout.logo` (validated by `layout.logo` in `UpdateBannerRequest`) and rendered in the preview. Still missing: the in-page "preview" is a hand-rolled mock (title/body/buttons/logo only), not the actual SDK-rendered banner. Layout type/position/theme/accent color and draft/publish separation (`BannerService::draftFor`) are implemented.
 
 ---
 
