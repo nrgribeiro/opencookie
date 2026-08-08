@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
+use Log;
 
 /**
  * Per-domain settings (US-SET-1, US-SET-2, US-SET-3, US-SET-5 link).
@@ -27,7 +28,7 @@ class DomainSettingsController extends Controller
         $policyVersions = $domain->policyVersions()
             ->orderByDesc('version')
             ->get()
-            ->map(fn (PolicyVersion $v) => [
+            ->map(fn(PolicyVersion $v) => [
                 'version' => $v->version,
                 'effectiveAt' => $v->effective_at?->toIso8601String(),
                 'notes' => $v->notes,
@@ -40,6 +41,7 @@ class DomainSettingsController extends Controller
                 'consentExpiryDays' => $domain->consent_expiry_days,
                 'scheduledScanEnabled' => $domain->scheduled_scan_enabled,
                 'scanFrequency' => $domain->scan_frequency,
+                'scheduledScansAllowed' => $domain->user->resolveTier()->scheduled_scans_allowed,
             ],
             'notifications' => [
                 'newCookieAlerts' => $domain->notificationSetting?->new_cookie_alerts ?? true,
@@ -52,6 +54,14 @@ class DomainSettingsController extends Controller
     public function update(UpdateDomainSettingsRequest $request, Domain $domain): RedirectResponse
     {
         $data = $request->validated();
+
+        Log::info('Updating domain settings', [
+            'domain' => $domain->hostname,
+            'consentExpiryDays' => $data['consentExpiryDays'],
+            'scheduledScanEnabled' => $data['scheduledScanEnabled'],
+            'scanFrequency' => $data['scanFrequency'] ?? null,
+            'newCookieAlerts' => $data['newCookieAlerts'],
+        ]);
 
         $domain->update([
             'consent_expiry_days' => $data['consentExpiryDays'],
