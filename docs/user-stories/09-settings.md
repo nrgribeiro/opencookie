@@ -14,6 +14,8 @@ Module ref: spec §4.9
 - **Given** settings, **when** I set a consent expiry duration (≤12 months recommended), **then** the SDK treats records older than that as invalid and re-prompts.
 - **Given** I set a value above the recommended max, **then** I am warned about GDPR guidance.
 
+**Status:** ✅ Implemented
+
 ---
 
 ## US-SET-2 — Manage policy versioning
@@ -26,6 +28,8 @@ Module ref: spec §4.9
 - **Given** a policy change, **when** I publish a new policy version, **then** existing consent records become invalid and visitors are re-prompted on next visit.
 - **Given** version history, **then** I can see effective dates of each version.
 
+**Status:** ✅ Implemented
+
 ---
 
 ## US-SET-3 — Notification preferences
@@ -37,6 +41,8 @@ Module ref: spec §4.9
 ### Acceptance Criteria
 - **Given** settings, **when** I enable "new cookie" alerts, **then** I receive an email when a scan finds new/unclassified cookies.
 - **Given** I disable alerts, **then** no such emails are sent.
+
+**Status:** ✅ Implemented
 
 ---
 
@@ -51,6 +57,8 @@ Module ref: spec §4.9
 - **Given** I confirm, **then** account, domains, configs, scans, and cookie records are removed; consent logs persist until the 24-month retention elapses, then purge.
 - **Given** deletion completes, **then** I am logged out and can no longer authenticate.
 
+**Status:** ✅ Implemented
+
 ---
 
 ## US-SET-5 — Edit banner content and languages
@@ -62,3 +70,5 @@ Module ref: spec §4.9
 ### Acceptance Criteria
 - **Given** settings, **when** I edit banner content or add/remove languages, **then** changes flow into a new draft banner config (publish per US-BAN-6).
 - **Given** a required language/text gap, **when** I attempt publish, **then** validation blocks it.
+
+**Status:** ✅ Implemented
